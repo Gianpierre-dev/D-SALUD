@@ -1,0 +1,45 @@
+<?php
+
+namespace App\Exports;
+
+use Illuminate\Support\Collection;
+use Maatwebsite\Excel\Concerns\FromCollection;
+use Maatwebsite\Excel\Concerns\WithHeadings;
+use Maatwebsite\Excel\Concerns\WithMapping;
+
+class ProductosMasVendidosExport implements FromCollection, WithHeadings, WithMapping
+{
+    public function __construct(private readonly Collection $productos)
+    {
+    }
+
+    public function collection(): Collection
+    {
+        return $this->productos;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function headings(): array
+    {
+        return [
+            'Producto',
+            'Cantidad Vendida',
+            'Total Vendido (S/)',
+        ];
+    }
+
+    /**
+     * @param  mixed  $fila
+     * @return array<int, mixed>
+     */
+    public function map($fila): array
+    {
+        return [
+            $fila->nombre_producto,
+            $fila->cantidad_total,
+            number_format((float) $fila->total_vendido, 2),
+        ];
+    }
+}
