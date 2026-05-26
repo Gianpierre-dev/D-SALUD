@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
+use App\Enums\Rol;
 use App\Http\Requests\Venta\AnularVentaRequest;
 use App\Http\Requests\Venta\StoreVentaRequest;
 use App\Models\Empresa;
@@ -52,7 +55,7 @@ class VentaController extends Controller
      */
     public function index(Request $request): Response
     {
-        $esAdmin = $request->user()->hasRole('Administrador');
+        $esAdmin = $request->user()->hasRole(Rol::ADMINISTRADOR->value);
 
         $filtros = [
             'fecha'       => $request->string('fecha')->trim()->value() ?: null,
@@ -77,7 +80,7 @@ class VentaController extends Controller
         $usuario = auth()->user();
 
         // Un vendedor solo puede ver las boletas de sus propias ventas.
-        if (! $usuario->hasRole('Administrador') && $venta->user_id !== $usuario->id) {
+        if (! $usuario->hasRole(Rol::ADMINISTRADOR->value) && $venta->user_id !== $usuario->id) {
             abort(403, 'No tienes permiso para ver esta boleta.');
         }
 

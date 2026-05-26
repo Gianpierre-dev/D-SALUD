@@ -1,6 +1,8 @@
 import { Head, Link } from '@inertiajs/react';
 import { IconPrinter, IconArrowLeft } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { ESTADO_VENTA } from '@/constants';
+import { formatearMoneda } from '@/utils/format';
 
 /**
  * Vista de boleta de venta.
@@ -11,10 +13,6 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 export default function Boleta({ venta, empresa }) {
     const boleta = venta.boleta;
     const vendedor = venta.vendedor;
-
-    const formatMoneda = (valor) =>
-        'S/ ' +
-        Number(valor).toLocaleString('es-PE', { minimumFractionDigits: 2 });
 
     const formatFecha = (fecha) =>
         new Date(fecha).toLocaleDateString('es-PE', {
@@ -145,10 +143,10 @@ export default function Boleta({ venta, empresa }) {
                                     {detalle.cantidad}
                                 </td>
                                 <td className="py-1.5 text-right text-gray-700 dark:text-gray-300">
-                                    {formatMoneda(detalle.precio_unitario)}
+                                    {formatearMoneda(detalle.precio_unitario)}
                                 </td>
                                 <td className="py-1.5 text-right font-medium text-gray-800 dark:text-gray-200">
-                                    {formatMoneda(detalle.subtotal)}
+                                    {formatearMoneda(detalle.subtotal)}
                                 </td>
                             </tr>
                         ))}
@@ -163,12 +161,12 @@ export default function Boleta({ venta, empresa }) {
                         TOTAL
                     </span>
                     <span className="text-xl font-bold text-brand-600 dark:text-brand-400">
-                        {formatMoneda(venta.total)}
+                        {formatearMoneda(venta.total)}
                     </span>
                 </div>
 
                 {/* Estado anulada */}
-                {venta.estado === 'ANULADA' && (
+                {venta.estado === ESTADO_VENTA.ANULADA && (
                     <div className="mt-4 rounded-md border border-red-300 bg-red-50 px-4 py-2 text-center dark:border-red-800 dark:bg-red-900/20">
                         <p className="text-sm font-semibold text-red-700 dark:text-red-400">
                             BOLETA ANULADA

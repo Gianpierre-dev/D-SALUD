@@ -11,6 +11,7 @@ import IconButton from '@/Components/IconButton';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import PrimaryButton from '@/Components/PrimaryButton';
 import ProductoFormModal from './Partials/ProductoFormModal';
+import { formatearMoneda } from '@/utils/format';
 
 export default function Index({ productos, categorias, filtros }) {
     const [modalAbierto, setModalAbierto] = useState(false);
@@ -57,11 +58,7 @@ export default function Index({ productos, categorias, filtros }) {
         {
             key: 'precio_venta',
             label: 'Precio',
-            render: (row) =>
-                new Intl.NumberFormat('es-PE', {
-                    style: 'currency',
-                    currency: 'PEN',
-                }).format(row.precio_venta),
+            render: (row) => formatearMoneda(row.precio_venta),
         },
         {
             key: 'stock_total',

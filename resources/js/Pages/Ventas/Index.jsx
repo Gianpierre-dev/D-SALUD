@@ -9,6 +9,8 @@ import Can from '@/Components/Can';
 import IconButton from '@/Components/IconButton';
 import SelectInput from '@/Components/SelectInput';
 import AnularVentaModal from './Partials/AnularVentaModal';
+import { ESTADO_VENTA } from '@/constants';
+import { formatearMoneda } from '@/utils/format';
 
 /**
  * Historial de ventas con filtros y acciones de reimprimir / anular.
@@ -57,16 +59,14 @@ export default function Index({ ventas, vendedores = [], filtros, esAdmin = fals
         {
             key: 'total',
             label: 'Total',
-            render: (row) =>
-                'S/ ' +
-                Number(row.total).toLocaleString('es-PE', { minimumFractionDigits: 2 }),
+            render: (row) => formatearMoneda(row.total),
         },
         {
             key: 'estado',
             label: 'Estado',
             render: (row) => (
-                <Badge variant={row.estado === 'COMPLETADA' ? 'success' : 'danger'}>
-                    {row.estado === 'COMPLETADA' ? 'Completada' : 'Anulada'}
+                <Badge variant={row.estado === ESTADO_VENTA.COMPLETADA ? 'success' : 'danger'}>
+                    {row.estado === ESTADO_VENTA.COMPLETADA ? 'Completada' : 'Anulada'}
                 </Badge>
             ),
         },
@@ -81,7 +81,7 @@ export default function Index({ ventas, vendedores = [], filtros, esAdmin = fals
                         </Link>
                     </Can>
                     <Can permission="ventas.cancel">
-                        {row.estado === 'COMPLETADA' && (
+                        {row.estado === ESTADO_VENTA.COMPLETADA && (
                             <IconButton
                                 icon={IconBan}
                                 title="Anular venta"
@@ -145,8 +145,8 @@ export default function Index({ ventas, vendedores = [], filtros, esAdmin = fals
                         className="text-sm"
                     >
                         <option value="">Todos los estados</option>
-                        <option value="COMPLETADA">Completada</option>
-                        <option value="ANULADA">Anulada</option>
+                        <option value={ESTADO_VENTA.COMPLETADA}>Completada</option>
+                        <option value={ESTADO_VENTA.ANULADA}>Anulada</option>
                     </SelectInput>
                 </div>
 

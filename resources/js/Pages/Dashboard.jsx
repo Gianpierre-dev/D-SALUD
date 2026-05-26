@@ -9,20 +9,7 @@ import {
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Badge from '@/Components/Badge';
 import StatCard from '@/Pages/Dashboard/Partials/StatCard';
-
-/**
- * Formatea un número como moneda peruana (S/ PEN).
- *
- * @param {number} valor
- * @returns {string}
- */
-function formatearPEN(valor) {
-    return new Intl.NumberFormat('es-PE', {
-        style: 'currency',
-        currency: 'PEN',
-        minimumFractionDigits: 2,
-    }).format(valor);
-}
+import { formatearMoneda } from '@/utils/format';
 
 /**
  * Determina la variante del badge según la proximidad del vencimiento.
@@ -81,7 +68,7 @@ export default function Dashboard({ indicadores = {}, stockBajo = [], porVencer 
                     />
                     <StatCard
                         titulo="Total recaudado"
-                        valor={formatearPEN(indicadores.recaudado)}
+                        valor={formatearMoneda(indicadores.recaudado)}
                         icon={IconCurrencyDollar}
                     />
                     <StatCard

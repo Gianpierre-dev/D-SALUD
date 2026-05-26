@@ -4,6 +4,7 @@ import { IconShoppingCart, IconSearch } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PrimaryButton from '@/Components/PrimaryButton';
 import CarritoItem from './Partials/CarritoItem';
+import { formatearMoneda } from '@/utils/format';
 
 /**
  * Punto de venta (POS).
@@ -159,11 +160,7 @@ export default function Create({ productos }) {
                                                 {producto.nombre}
                                             </span>
                                             <span className="text-base font-bold text-brand-600 dark:text-brand-400">
-                                                S/{' '}
-                                                {Number(producto.precio_venta).toLocaleString(
-                                                    'es-PE',
-                                                    { minimumFractionDigits: 2 }
-                                                )}
+                                                {formatearMoneda(producto.precio_venta)}
                                             </span>
                                             <span className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                                                 Stock: {disponible}
@@ -213,10 +210,7 @@ export default function Create({ productos }) {
                                         Total
                                     </span>
                                     <span className="text-lg font-bold text-gray-800 dark:text-gray-100">
-                                        S/{' '}
-                                        {totalCarrito.toLocaleString('es-PE', {
-                                            minimumFractionDigits: 2,
-                                        })}
+                                        {formatearMoneda(totalCarrito)}
                                     </span>
                                 </div>
                                 <PrimaryButton

@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
+use App\Enums\Rol;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -68,11 +71,11 @@ class RolePermissionSeeder extends Seeder
         }
 
         // Administrador: acceso total.
-        $administrador = Role::firstOrCreate(['name' => 'Administrador', 'guard_name' => 'web']);
+        $administrador = Role::firstOrCreate(['name' => Rol::ADMINISTRADOR->value, 'guard_name' => 'web']);
         $administrador->syncPermissions(Permission::all());
 
         // Vendedor: solo operación de ventas y consulta de catálogo.
-        $vendedor = Role::firstOrCreate(['name' => 'Vendedor', 'guard_name' => 'web']);
+        $vendedor = Role::firstOrCreate(['name' => Rol::VENDEDOR->value, 'guard_name' => 'web']);
         $vendedor->syncPermissions($this->permisosVendedor);
     }
 }

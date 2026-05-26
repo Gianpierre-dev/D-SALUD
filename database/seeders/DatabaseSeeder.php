@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
+use App\Enums\Rol;
 use App\Models\Empresa;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -25,7 +28,7 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('password'),
             ],
         );
-        $admin->syncRoles('Administrador');
+        $admin->syncRoles(Rol::ADMINISTRADOR->value);
 
         // Usuario vendedor de ejemplo.
         $vendedor = User::updateOrCreate(
@@ -35,7 +38,7 @@ class DatabaseSeeder extends Seeder
                 'password' => Hash::make('password'),
             ],
         );
-        $vendedor->syncRoles('Vendedor');
+        $vendedor->syncRoles(Rol::VENDEDOR->value);
 
         // Configuración inicial de la empresa (singleton).
         Empresa::updateOrCreate(

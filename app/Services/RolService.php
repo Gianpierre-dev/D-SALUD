@@ -1,7 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
+use App\Enums\Rol;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Permission;
@@ -13,9 +16,6 @@ use Spatie\Permission\Models\Role;
  */
 class RolService
 {
-    /** Roles del sistema que no pueden eliminarse. */
-    private const ROLES_PROTEGIDOS = ['Administrador', 'Vendedor'];
-
     public function __construct(private readonly AuditoriaService $auditoria)
     {
     }
@@ -77,7 +77,7 @@ class RolService
      */
     public function eliminar(Role $rol): void
     {
-        if (in_array($rol->name, self::ROLES_PROTEGIDOS, true)) {
+        if (in_array($rol->name, Rol::values(), true)) {
             throw new \RuntimeException("El rol \"{$rol->name}\" es un rol del sistema y no puede eliminarse.");
         }
 

@@ -1,5 +1,6 @@
 import { IconMinus, IconPlus, IconTrash } from '@tabler/icons-react';
 import IconButton from '@/Components/IconButton';
+import { formatearMoneda } from '@/utils/format';
 
 /**
  * Fila del carrito de ventas.
@@ -16,11 +17,7 @@ export default function CarritoItem({ item, onCambiarCantidad, onQuitar }) {
                     {item.nombre}
                 </p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">
-                    S/{' '}
-                    {Number(item.precio_venta).toLocaleString('es-PE', {
-                        minimumFractionDigits: 2,
-                    })}{' '}
-                    c/u
+                    {formatearMoneda(item.precio_venta)} c/u
                 </p>
             </div>
 
@@ -45,8 +42,7 @@ export default function CarritoItem({ item, onCambiarCantidad, onQuitar }) {
 
             {/* Subtotal */}
             <div className="w-20 text-right text-sm font-semibold text-gray-800 dark:text-gray-100">
-                S/{' '}
-                {subtotal.toLocaleString('es-PE', { minimumFractionDigits: 2 })}
+                {formatearMoneda(subtotal)}
             </div>
 
             {/* Quitar */}
