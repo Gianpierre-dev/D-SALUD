@@ -32,9 +32,11 @@ function formatearPEN(valor) {
  * @returns {'danger'|'warning'}
  */
 function variantePorVencer(fechaVencimiento) {
-    const hoy     = new Date();
-    const vence   = new Date(fechaVencimiento);
-    const diff    = Math.ceil((vence - hoy) / (1000 * 60 * 60 * 24));
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+    const vence = new Date(fechaVencimiento);
+    vence.setHours(0, 0, 0, 0);
+    const diff = Math.round((vence - hoy) / (1000 * 60 * 60 * 24));
     return diff <= 7 ? 'danger' : 'warning';
 }
 
@@ -52,7 +54,7 @@ function formatearFecha(fecha) {
     });
 }
 
-export default function Dashboard({ indicadores, stockBajo, porVencer }) {
+export default function Dashboard({ indicadores = {}, stockBajo = [], porVencer = [] }) {
     return (
         <AuthenticatedLayout
             header={

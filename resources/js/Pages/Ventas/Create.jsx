@@ -74,17 +74,16 @@ export default function Create({ productos }) {
             return;
         }
 
-        const item = carrito.find((i) => i.producto_id === productoId);
-        if (!item) return;
-
-        // No superar el stock total del servidor.
-        const maxPermitido = Number(item.stock_total);
-        if (nuevaCantidad > maxPermitido) return;
-
+        // Updater funcional: evita stale closures con clicks rápidos (POS).
         setCarrito((prev) =>
-            prev.map((i) =>
-                i.producto_id === productoId ? { ...i, cantidad: nuevaCantidad } : i
-            )
+            prev.map((i) => {
+                if (i.producto_id !== productoId) {
+                    return i;
+                }
+                // No superar el stock total del servidor.
+                const cantidad = Math.min(nuevaCantidad, Number(i.stock_total));
+                return { ...i, cantidad };
+            })
         );
     };
 
@@ -100,7 +99,10 @@ export default function Create({ productos }) {
         router.post(
             route('ventas.store'),
             { items: carrito.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })) },
-            { onFinish: () => setProcesando(false) }
+            {
+                onSuccess: () => setCarrito([]),
+                onFinish: () => setProcesando(false),
+            }
         );
     };
 
@@ -126,7 +128,7 @@ export default function Create({ productos }) {
                                 placeholder="Buscar por nombre o código..."
                                 value={busqueda}
                                 onChange={(e) => setBusqueda(e.target.value)}
-                                className="w-full rounded-md border border-gray-300 py-2 pl-9 pr-4 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                                className="w-full rounded-md border border-gray-300 py-2 pl-9 pr-4 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                             />
                         </div>
 
@@ -147,16 +149,16 @@ export default function Create({ productos }) {
                                             type="button"
                                             disabled={agotado}
                                             onClick={() => agregarAlCarrito(producto)}
-                                            className={`flex flex-col rounded-lg border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-indigo-500 ${
+                                            className={`flex flex-col rounded-lg border p-3 text-left transition focus:outline-none focus:ring-2 focus:ring-brand-500 ${
                                                 agotado
                                                     ? 'cursor-not-allowed border-gray-200 bg-gray-50 opacity-50 dark:border-gray-700 dark:bg-gray-800'
-                                                    : 'cursor-pointer border-gray-200 bg-white hover:border-indigo-400 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-indigo-500'
+                                                    : 'cursor-pointer border-gray-200 bg-white hover:border-brand-400 hover:shadow-md dark:border-gray-700 dark:bg-gray-800 dark:hover:border-brand-500'
                                             }`}
                                         >
                                             <span className="mb-1 line-clamp-2 text-sm font-medium text-gray-800 dark:text-gray-100">
                                                 {producto.nombre}
                                             </span>
-                                            <span className="text-base font-bold text-indigo-600 dark:text-indigo-400">
+                                            <span className="text-base font-bold text-brand-600 dark:text-brand-400">
                                                 S/{' '}
                                                 {Number(producto.precio_venta).toLocaleString(
                                                     'es-PE',
@@ -177,10 +179,10 @@ export default function Create({ productos }) {
                     <div className="flex flex-col gap-4 lg:col-span-1">
                         <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
                             <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-gray-800 dark:text-gray-100">
-                                <IconShoppingCart className="h-5 w-5 text-indigo-500" />
+                                <IconShoppingCart className="h-5 w-5 text-brand-500" />
                                 Carrito
                                 {carrito.length > 0 && (
-                                    <span className="ml-auto rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700 dark:bg-indigo-900/40 dark:text-indigo-300">
+                                    <span className="ml-auto rounded-full bg-brand-100 px-2 py-0.5 text-xs font-medium text-brand-700 dark:bg-brand-900/40 dark:text-brand-300">
                                         {carrito.length}{' '}
                                         {carrito.length === 1 ? 'ítem' : 'ítems'}
                                     </span>

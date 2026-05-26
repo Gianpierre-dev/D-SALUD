@@ -8,8 +8,8 @@
  * @param {string} emptyMessage  Mensaje cuando no hay datos.
  */
 export default function DataTable({
-    columns,
-    rows,
+    columns = [],
+    rows = [],
     rowKey = 'id',
     emptyMessage = 'No hay registros para mostrar.',
 }) {

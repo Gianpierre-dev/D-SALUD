@@ -81,82 +81,89 @@ export default function RolFormModal({ show, onClose, rol = null, permisos = {} 
     const modulos = Object.entries(permisos);
 
     return (
-        <Modal show={show} onClose={cerrar} maxWidth="lg">
-            <form onSubmit={submit} className="p-6">
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
-                    {esEdicion ? 'Editar rol' : 'Nuevo rol'}
-                </h2>
-
-                {/* Nombre del rol */}
-                <div className="mt-4">
-                    <InputLabel htmlFor="name" value="Nombre del rol" />
-                    <TextInput
-                        id="name"
-                        className="mt-1 block w-full"
-                        value={data.name}
-                        onChange={(e) => setData('name', e.target.value)}
-                        isFocused
-                        autoComplete="off"
-                    />
-                    <InputError message={errors.name} className="mt-2" />
+        <Modal show={show} onClose={cerrar} maxWidth="3xl">
+            <form onSubmit={submit} className="flex max-h-[85vh] flex-col">
+                {/* Encabezado fijo */}
+                <div className="border-b border-gray-200 px-6 py-4 dark:border-gray-700">
+                    <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+                        {esEdicion ? 'Editar rol' : 'Nuevo rol'}
+                    </h2>
                 </div>
 
-                {/* Permisos agrupados por módulo */}
-                {modulos.length > 0 && (
-                    <div className="mt-5">
-                        <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                            Permisos
-                        </p>
-                        <InputError message={errors.permissions} className="mt-1" />
-
-                        <div className="mt-3 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                            {modulos.map(([modulo, permsModulo]) => {
-                                const nombresModulo = permsModulo.map((p) => p.name);
-                                const todosActivos = nombresModulo.every((n) =>
-                                    data.permissions.includes(n),
-                                );
-
-                                return (
-                                    <div
-                                        key={modulo}
-                                        className="rounded-lg border border-gray-200 p-3 dark:border-gray-700"
-                                    >
-                                        {/* Cabecera del módulo con toggle-all */}
-                                        <label className="flex cursor-pointer items-center gap-2">
-                                            <Checkbox
-                                                checked={todosActivos}
-                                                onChange={() => toggleModulo(permsModulo)}
-                                            />
-                                            <span className="text-sm font-semibold capitalize text-gray-800 dark:text-gray-200">
-                                                {modulo}
-                                            </span>
-                                        </label>
-
-                                        {/* Permisos individuales del módulo */}
-                                        <div className="ml-6 mt-2 space-y-1">
-                                            {permsModulo.map((permiso) => (
-                                                <label
-                                                    key={permiso.id}
-                                                    className="flex cursor-pointer items-center gap-2"
-                                                >
-                                                    <Checkbox
-                                                        checked={data.permissions.includes(permiso.name)}
-                                                        onChange={() => togglePermiso(permiso.name)}
-                                                    />
-                                                    <span className="text-xs text-gray-600 dark:text-gray-400">
-                                                        {permiso.name.split('.')[1]}
-                                                    </span>
-                                                </label>
-                                            ))}
-                                        </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
+                {/* Cuerpo con scroll interno */}
+                <div className="flex-1 overflow-y-auto px-6 py-4">
+                    {/* Nombre del rol */}
+                    <div>
+                        <InputLabel htmlFor="name" value="Nombre del rol" />
+                        <TextInput
+                            id="name"
+                            className="mt-1 block w-full"
+                            value={data.name}
+                            onChange={(e) => setData('name', e.target.value)}
+                            isFocused
+                            autoComplete="off"
+                        />
+                        <InputError message={errors.name} className="mt-2" />
                     </div>
-                )}
 
-                <div className="mt-6 flex justify-end gap-3">
+                    {/* Permisos agrupados por módulo */}
+                    {modulos.length > 0 && (
+                        <div className="mt-5">
+                            <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                                Permisos
+                            </p>
+                            <InputError message={errors.permissions} className="mt-1" />
+
+                            <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                {modulos.map(([modulo, permsModulo]) => {
+                                    const nombresModulo = permsModulo.map((p) => p.name);
+                                    const todosActivos = nombresModulo.every((n) =>
+                                        data.permissions.includes(n),
+                                    );
+
+                                    return (
+                                        <div
+                                            key={modulo}
+                                            className="rounded-lg border border-gray-200 p-3 dark:border-gray-700"
+                                        >
+                                            {/* Cabecera del módulo con toggle-all */}
+                                            <label className="flex cursor-pointer items-center gap-2 border-b border-gray-100 pb-2 dark:border-gray-700">
+                                                <Checkbox
+                                                    checked={todosActivos}
+                                                    onChange={() => toggleModulo(permsModulo)}
+                                                />
+                                                <span className="text-sm font-semibold capitalize text-gray-800 dark:text-gray-200">
+                                                    {modulo}
+                                                </span>
+                                            </label>
+
+                                            {/* Permisos individuales del módulo */}
+                                            <div className="mt-2 space-y-1">
+                                                {permsModulo.map((permiso) => (
+                                                    <label
+                                                        key={permiso.id}
+                                                        className="flex cursor-pointer items-center gap-2"
+                                                    >
+                                                        <Checkbox
+                                                            checked={data.permissions.includes(permiso.name)}
+                                                            onChange={() => togglePermiso(permiso.name)}
+                                                        />
+                                                        <span className="text-xs capitalize text-gray-600 dark:text-gray-400">
+                                                            {permiso.name.split('.')[1]}
+                                                        </span>
+                                                    </label>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    )}
+                </div>
+
+                {/* Pie fijo */}
+                <div className="flex justify-end gap-3 border-t border-gray-200 px-6 py-4 dark:border-gray-700">
                     <SecondaryButton type="button" onClick={cerrar} disabled={processing}>
                         Cancelar
                     </SecondaryButton>

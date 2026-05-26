@@ -53,12 +53,21 @@ class VentaService
                 $productoId = (int) $item['producto_id'];
                 $cantidadPendiente = (int) $item['cantidad'];
 
-                /** @var Producto $producto */
-                $producto = Producto::findOrFail($productoId);
+                /** @var Producto|null $producto */
+                $producto = Producto::find($productoId);
 
-                // 2. Lotes con stock, ordenados FEFO, bloqueados para esta transacción.
+                // Solo se venden productos activos.
+                if ($producto === null || ! $producto->activo) {
+                    throw new \RuntimeException(
+                        'El producto seleccionado no está disponible para la venta.'
+                    );
+                }
+
+                // 2. Lotes con stock y NO vencidos, ordenados FEFO, bloqueados para esta transacción.
+                //    Excluir vencidos es crítico en una botica: nunca dispensar producto vencido.
                 $lotes = Lote::where('producto_id', $productoId)
                     ->where('stock', '>', 0)
+                    ->whereDate('fecha_vencimiento', '>=', now()->toDateString())
                     ->orderBy('fecha_vencimiento', 'asc')
                     ->lockForUpdate()
                     ->get();
@@ -131,6 +140,11 @@ class VentaService
     public function anular(Venta $venta, string $motivo, int $userId): void
     {
         DB::transaction(function () use ($venta, $motivo, $userId): void {
+            // Recargar con bloqueo pesimista para evitar anulaciones concurrentes
+            // que repongan el stock por duplicado.
+            $venta = Venta::lockForUpdate()->findOrFail($venta->id);
+            $venta->load('detalles');
+
             if ($venta->estado === Venta::ESTADO_ANULADA) {
                 throw new \RuntimeException('La venta ya está anulada.');
             }

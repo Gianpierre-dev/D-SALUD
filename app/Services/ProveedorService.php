@@ -22,8 +22,10 @@ class ProveedorService
     {
         return Proveedor::query()
             ->when($buscar, function ($query, $termino): void {
-                $query->where('razon_social', 'like', "%{$termino}%")
-                    ->orWhere('ruc', 'like', "%{$termino}%");
+                $query->where(function ($q) use ($termino): void {
+                    $q->where('razon_social', 'like', "%{$termino}%")
+                        ->orWhere('ruc', 'like', "%{$termino}%");
+                });
             })
             ->orderBy('razon_social')
             ->paginate(config('dsalud.paginacion.por_pagina'))

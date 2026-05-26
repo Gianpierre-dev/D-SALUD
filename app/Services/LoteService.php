@@ -27,9 +27,10 @@ class LoteService
             ->with(['producto', 'proveedor'])
             ->when(
                 $buscar,
-                fn ($query, $termino) => $query
-                    ->where('codigo_lote', 'like', "%{$termino}%")
-                    ->orWhereHas('producto', fn ($q) => $q->where('nombre', 'like', "%{$termino}%"))
+                fn ($query, $termino) => $query->where(function ($q) use ($termino): void {
+                    $q->where('codigo_lote', 'like', "%{$termino}%")
+                        ->orWhereHas('producto', fn ($sub) => $sub->where('nombre', 'like', "%{$termino}%"));
+                })
             )
             ->orderBy('fecha_vencimiento')
             ->paginate(config('dsalud.paginacion.por_pagina'))
@@ -86,6 +87,13 @@ class LoteService
 
     public function eliminar(Lote $lote): void
     {
+        // No se puede eliminar un lote que ya participó en ventas (integridad histórica).
+        if ($lote->detalleVentas()->exists()) {
+            throw new \RuntimeException(
+                'No se puede eliminar el lote porque tiene ventas asociadas.'
+            );
+        }
+
         $this->auditoria->registrar('lotes', 'eliminar', "Lote #{$lote->id}: {$lote->codigo_lote}");
         $lote->delete();
     }

@@ -19,8 +19,8 @@ class StoreVentaRequest extends FormRequest
     {
         return [
             'items'                  => ['required', 'array', 'min:1'],
-            'items.*.producto_id'    => ['required', 'integer', 'exists:productos,id'],
-            'items.*.cantidad'       => ['required', 'integer', 'min:1'],
+            'items.*.producto_id'    => ['required', 'integer', 'distinct', 'exists:productos,id'],
+            'items.*.cantidad'       => ['required', 'integer', 'min:1', 'max:10000'],
         ];
     }
 
