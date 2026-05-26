@@ -3,7 +3,7 @@ const VARIANTES = {
     danger: 'bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300',
     warning: 'bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300',
     neutral: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
-    info: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/40 dark:text-indigo-300',
+    info: 'bg-brand-100 text-brand-800 dark:bg-brand-900/40 dark:text-brand-300',
 };
 
 /**

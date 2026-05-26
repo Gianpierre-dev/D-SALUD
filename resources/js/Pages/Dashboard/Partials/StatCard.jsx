@@ -6,7 +6,7 @@
 export default function StatCard({ titulo, valor, icon: Icon }) {
     return (
         <div className="flex items-center gap-4 rounded-lg border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-800">
-            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100 text-indigo-600 dark:bg-indigo-900/40 dark:text-indigo-400">
+            <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-brand-100 text-brand-600 dark:bg-brand-900/40 dark:text-brand-400">
                 <Icon className="h-6 w-6" aria-hidden="true" />
             </div>
             <div className="min-w-0">

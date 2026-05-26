@@ -48,7 +48,7 @@ export default function Pagination({ links = [] }) {
                         aria-current={link.active ? 'page' : undefined}
                         className={`${baseClasses} ${
                             link.active
-                                ? 'bg-indigo-600 text-white'
+                                ? 'bg-brand-600 text-white'
                                 : 'text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700'
                         }`}
                     >

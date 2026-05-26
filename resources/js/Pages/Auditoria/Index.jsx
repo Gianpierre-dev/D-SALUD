@@ -111,7 +111,7 @@ export default function Index({ registros, modulos, filtros }) {
                         type="date"
                         value={filtros.fecha ?? ''}
                         onChange={(e) => aplicarFiltros({ fecha: e.target.value, page: 1 })}
-                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 sm:w-44"
+                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 sm:w-44"
                         aria-label="Filtrar por fecha"
                     />
                 </div>

@@ -5,14 +5,14 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import FlashMessages from '@/Components/FlashMessages';
 import SidebarNavItem from '@/Components/SidebarNavItem';
+import ThemeToggle from '@/Components/ThemeToggle';
 import { navigation } from '@/navigation';
 import { usePermissions } from '@/hooks/usePermissions';
 
 export default function AuthenticatedLayout({ header, children }) {
     const { can } = usePermissions();
     const page = usePage();
-    const user = page.props.auth.user;
-    const appName = page.props.app?.name ?? "D'Salud";
+    const user = page.props.auth?.user;
     const [sidebarOpen, setSidebarOpen] = useState(false);
 
     // Solo secciones/ítems cuya ruta exista y el usuario tenga permiso.
@@ -55,9 +55,8 @@ export default function AuthenticatedLayout({ header, children }) {
         <div className="min-h-screen bg-gray-100 dark:bg-gray-900">
             {/* Sidebar fijo (desktop) */}
             <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col border-r border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800 lg:flex">
-                <div className="flex h-16 items-center gap-2 border-b border-gray-200 px-4 dark:border-gray-700">
-                    <ApplicationLogo className="h-8 w-auto fill-current text-gray-800 dark:text-gray-200" />
-                    <span className="font-semibold text-gray-800 dark:text-gray-200">{appName}</span>
+                <div className="flex h-28 items-center justify-center border-b border-gray-200 px-4 py-3 dark:border-gray-700">
+                    <ApplicationLogo className="h-full w-auto" />
                 </div>
                 {menu}
             </aside>
@@ -71,10 +70,8 @@ export default function AuthenticatedLayout({ header, children }) {
                         aria-hidden="true"
                     />
                     <aside className="absolute inset-y-0 left-0 flex w-64 flex-col bg-white dark:bg-gray-800">
-                        <div className="flex h-16 items-center justify-between border-b border-gray-200 px-4 dark:border-gray-700">
-                            <span className="font-semibold text-gray-800 dark:text-gray-200">
-                                {appName}
-                            </span>
+                        <div className="flex h-20 items-center justify-between border-b border-gray-200 px-4 py-2 dark:border-gray-700">
+                            <ApplicationLogo className="h-full w-auto" />
                             <button
                                 type="button"
                                 onClick={closeSidebar}
@@ -101,8 +98,13 @@ export default function AuthenticatedLayout({ header, children }) {
                         <IconMenu2 className="h-6 w-6" />
                     </button>
 
+                    {/* Logo en la barra superior (visible solo en mobile, donde el sidebar está oculto) */}
+                    <ApplicationLogo className="h-10 w-auto lg:hidden" />
+
                     <div className="hidden min-w-0 flex-1 truncate lg:block">{header}</div>
                     <div className="flex-1 lg:hidden" />
+
+                    <ThemeToggle />
 
                     <Dropdown>
                         <Dropdown.Trigger>
@@ -110,7 +112,7 @@ export default function AuthenticatedLayout({ header, children }) {
                                 type="button"
                                 className="inline-flex items-center rounded-md border border-transparent bg-white px-3 py-2 text-sm font-medium text-gray-600 transition hover:text-gray-800 focus:outline-none dark:bg-gray-800 dark:text-gray-300 dark:hover:text-gray-200"
                             >
-                                {user.name}
+                                {user?.name}
                                 <svg
                                     className="-me-0.5 ms-2 h-4 w-4"
                                     xmlns="http://www.w3.org/2000/svg"

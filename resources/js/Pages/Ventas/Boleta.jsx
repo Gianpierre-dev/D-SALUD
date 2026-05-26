@@ -47,7 +47,7 @@ export default function Boleta({ venta, empresa }) {
                 <button
                     type="button"
                     onClick={() => window.print()}
-                    className="inline-flex items-center gap-1 rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="inline-flex items-center gap-1 rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
                 >
                     <IconPrinter className="h-4 w-4" />
                     Imprimir
@@ -96,7 +96,7 @@ export default function Boleta({ venta, empresa }) {
                     <h2 className="text-base font-bold uppercase tracking-wider text-gray-900 dark:text-gray-100">
                         Boleta de Venta
                     </h2>
-                    <p className="text-lg font-semibold text-indigo-600 dark:text-indigo-400">
+                    <p className="text-lg font-semibold text-brand-600 dark:text-brand-400">
                         {boleta?.numero_formateado}
                     </p>
                 </div>
@@ -162,7 +162,7 @@ export default function Boleta({ venta, empresa }) {
                     <span className="text-base font-bold text-gray-800 dark:text-gray-100">
                         TOTAL
                     </span>
-                    <span className="text-xl font-bold text-indigo-600 dark:text-indigo-400">
+                    <span className="text-xl font-bold text-brand-600 dark:text-brand-400">
                         {formatMoneda(venta.total)}
                     </span>
                 </div>

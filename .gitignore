@@ -21,3 +21,8 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+
+# Archivos de trabajo (capturas de pantalla, backups)
+/ss/
+/*.png
+*.backup-*.docx
