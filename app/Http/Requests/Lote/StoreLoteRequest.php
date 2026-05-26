@@ -29,7 +29,7 @@ class StoreLoteRequest extends FormRequest
                     fn ($query) => $query->where('producto_id', $this->input('producto_id'))
                 ),
             ],
-            'fecha_vencimiento' => ['required', 'date', 'after:today'],
+            'fecha_vencimiento' => ['required', 'date', 'after_or_equal:today'],
             'stock'             => ['required', 'integer', 'min:0'],
             'precio_compra'     => ['required', 'numeric', 'min:0'],
         ];

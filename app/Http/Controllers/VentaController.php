@@ -52,16 +52,20 @@ class VentaController extends Controller
      */
     public function index(Request $request): Response
     {
+        $esAdmin = $request->user()->hasRole('Administrador');
+
         $filtros = [
             'fecha'       => $request->string('fecha')->trim()->value() ?: null,
-            'vendedor_id' => $request->integer('vendedor_id') ?: null,
+            // El vendedor solo ve sus propias ventas; el administrador puede filtrar por cualquiera.
+            'vendedor_id' => $esAdmin ? ($request->integer('vendedor_id') ?: null) : $request->user()->id,
             'estado'      => $request->string('estado')->trim()->value() ?: null,
         ];
 
         return Inertia::render('Ventas/Index', [
-            'ventas'    => $this->service->paginarHistorial($filtros),
-            'vendedores' => $this->service->vendedores(),
-            'filtros'   => $filtros,
+            'ventas'     => $this->service->paginarHistorial($filtros),
+            'vendedores' => $esAdmin ? $this->service->vendedores() : [],
+            'filtros'    => $filtros,
+            'esAdmin'    => $esAdmin,
         ]);
     }
 
@@ -70,6 +74,13 @@ class VentaController extends Controller
      */
     public function boleta(Venta $venta): Response
     {
+        $usuario = auth()->user();
+
+        // Un vendedor solo puede ver las boletas de sus propias ventas.
+        if (! $usuario->hasRole('Administrador') && $venta->user_id !== $usuario->id) {
+            abort(403, 'No tienes permiso para ver esta boleta.');
+        }
+
         $venta->load('detalles.producto', 'boleta', 'vendedor');
 
         return Inertia::render('Ventas/Boleta', [

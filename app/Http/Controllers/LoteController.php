@@ -46,8 +46,12 @@ class LoteController extends Controller
 
     public function destroy(Lote $lote): RedirectResponse
     {
-        $this->service->eliminar($lote);
+        try {
+            $this->service->eliminar($lote);
 
-        return back()->with('success', 'Lote eliminado correctamente.');
+            return back()->with('success', 'Lote eliminado correctamente.');
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
     }
 }

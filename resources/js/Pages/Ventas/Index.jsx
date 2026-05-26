@@ -13,7 +13,7 @@ import AnularVentaModal from './Partials/AnularVentaModal';
 /**
  * Historial de ventas con filtros y acciones de reimprimir / anular.
  */
-export default function Index({ ventas, vendedores, filtros }) {
+export default function Index({ ventas, vendedores = [], filtros, esAdmin = false }) {
     const [ventaAnular, setVentaAnular] = useState(null);
 
     // ---------- Filtros ----------
@@ -115,24 +115,26 @@ export default function Index({ ventas, vendedores, filtros }) {
                         onChange={(e) =>
                             aplicarFiltros({ fecha: e.target.value || null })
                         }
-                        className="rounded-md border-gray-300 text-sm shadow-sm focus:border-indigo-500 focus:ring-indigo-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        className="rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
                     />
 
-                    {/* Vendedor */}
-                    <SelectInput
-                        value={filtros.vendedor_id ?? ''}
-                        onChange={(e) =>
-                            aplicarFiltros({ vendedor_id: e.target.value || null })
-                        }
-                        className="text-sm"
-                    >
-                        <option value="">Todos los vendedores</option>
-                        {vendedores.map((v) => (
-                            <option key={v.id} value={v.id}>
-                                {v.name}
-                            </option>
-                        ))}
-                    </SelectInput>
+                    {/* Vendedor (solo administrador) */}
+                    {esAdmin && (
+                        <SelectInput
+                            value={filtros.vendedor_id ?? ''}
+                            onChange={(e) =>
+                                aplicarFiltros({ vendedor_id: e.target.value || null })
+                            }
+                            className="text-sm"
+                        >
+                            <option value="">Todos los vendedores</option>
+                            {vendedores.map((v) => (
+                                <option key={v.id} value={v.id}>
+                                    {v.name}
+                                </option>
+                            ))}
+                        </SelectInput>
+                    )}
 
                     {/* Estado */}
                     <SelectInput

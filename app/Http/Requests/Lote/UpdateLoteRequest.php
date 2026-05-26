@@ -30,7 +30,8 @@ class UpdateLoteRequest extends FormRequest
                     ->where(fn ($query) => $query->where('producto_id', $this->input('producto_id')))
                     ->ignore($loteId),
             ],
-            'fecha_vencimiento' => ['required', 'date', 'after:today'],
+            // En edición se permite mantener una fecha pasada (corrección de lotes ya vencidos).
+            'fecha_vencimiento' => ['required', 'date'],
             'stock'             => ['required', 'integer', 'min:0'],
             'precio_compra'     => ['required', 'numeric', 'min:0'],
         ];
