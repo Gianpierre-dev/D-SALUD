@@ -34,7 +34,7 @@ export default function Boleta({ venta, empresa }) {
             <Head title={`Boleta ${boleta?.numero_formateado ?? ''}`} />
 
             {/* Botones de acción (se ocultan al imprimir) */}
-            <div className="mx-auto mb-4 flex max-w-2xl gap-3 print:hidden">
+            <div className="mx-auto mb-4 flex max-w-2xl flex-wrap gap-3 print:hidden">
                 <Link
                     href={route('ventas.index')}
                     className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
@@ -113,7 +113,8 @@ export default function Boleta({ venta, empresa }) {
                 <hr className="mb-4 border-dashed border-gray-300 dark:border-gray-600" />
 
                 {/* Tabla de detalles */}
-                <table className="mb-4 w-full text-sm">
+                <div className="mb-4 overflow-x-auto">
+                    <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b border-gray-200 dark:border-gray-700">
                             <th className="py-1 text-left font-semibold text-gray-700 dark:text-gray-300">
@@ -151,7 +152,8 @@ export default function Boleta({ venta, empresa }) {
                             </tr>
                         ))}
                     </tbody>
-                </table>
+                    </table>
+                </div>
 
                 <hr className="mb-3 border-gray-200 dark:border-gray-700" />
 

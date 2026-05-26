@@ -107,7 +107,7 @@ export default function Index({ ventas, vendedores = [], filtros, esAdmin = fals
 
             <div className="mx-auto max-w-7xl">
                 {/* Filtros */}
-                <div className="mb-4 flex flex-wrap gap-3">
+                <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center">
                     {/* Fecha */}
                     <input
                         type="date"
@@ -115,7 +115,7 @@ export default function Index({ ventas, vendedores = [], filtros, esAdmin = fals
                         onChange={(e) =>
                             aplicarFiltros({ fecha: e.target.value || null })
                         }
-                        className="rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300"
+                        className="w-full rounded-md border-gray-300 text-sm shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-300 sm:w-auto"
                     />
 
                     {/* Vendedor (solo administrador) */}
@@ -125,7 +125,7 @@ export default function Index({ ventas, vendedores = [], filtros, esAdmin = fals
                             onChange={(e) =>
                                 aplicarFiltros({ vendedor_id: e.target.value || null })
                             }
-                            className="text-sm"
+                            className="w-full text-sm sm:w-auto"
                         >
                             <option value="">Todos los vendedores</option>
                             {vendedores.map((v) => (
@@ -142,7 +142,7 @@ export default function Index({ ventas, vendedores = [], filtros, esAdmin = fals
                         onChange={(e) =>
                             aplicarFiltros({ estado: e.target.value || null })
                         }
-                        className="text-sm"
+                        className="w-full text-sm sm:w-auto"
                     >
                         <option value="">Todos los estados</option>
                         <option value={ESTADO_VENTA.COMPLETADA}>Completada</option>

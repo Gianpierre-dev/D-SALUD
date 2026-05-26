@@ -136,7 +136,7 @@ export default function LoteFormModal({ show, onClose, lote = null, productos, p
                 </div>
 
                 {/* Stock y Precio de compra en fila */}
-                <div className="mt-4 grid grid-cols-2 gap-4">
+                <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <InputLabel htmlFor="stock" value="Stock" />
                         <TextInput

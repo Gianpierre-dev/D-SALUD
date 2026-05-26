@@ -173,7 +173,7 @@ export default function Create({ productos }) {
                     </div>
 
                     {/* ===== COLUMNA DERECHA: Carrito ===== */}
-                    <div className="flex flex-col gap-4 lg:col-span-1">
+                    <div className="flex flex-col gap-4 lg:col-span-1 lg:sticky lg:top-4 lg:self-start">
                         <div className="rounded-lg border border-gray-200 bg-white p-4 dark:border-gray-700 dark:bg-gray-800">
                             <h3 className="mb-3 flex items-center gap-2 text-base font-semibold text-gray-800 dark:text-gray-100">
                                 <IconShoppingCart className="h-5 w-5 text-brand-500" />
@@ -191,7 +191,7 @@ export default function Create({ productos }) {
                                     Selecciona productos del catálogo.
                                 </p>
                             ) : (
-                                <div className="flex flex-col gap-2">
+                                <div className="flex max-h-64 flex-col gap-2 overflow-y-auto lg:max-h-96">
                                     {carrito.map((item) => (
                                         <CarritoItem
                                             key={item.producto_id}
