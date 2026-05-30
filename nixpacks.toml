@@ -1,0 +1,29 @@
+# Configuración de despliegue para Railway / Nixpacks.
+#
+# El servicio web ejecuta el comando definido en [start]. Para los servicios
+# adicionales (queue worker y scheduler) crear servicios separados en Railway
+# apuntando al mismo repositorio con los comandos:
+#   - Worker:    php artisan queue:work --tries=3 --max-time=3600
+#   - Scheduler: php artisan schedule:work
+
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.build]
+cmds = [
+    "composer install --no-dev --optimize-autoloader",
+    "npm ci",
+    "npm run build",
+]
+
+[phases.deploy]
+cmds = [
+    "php artisan migrate --force",
+    "php artisan config:cache",
+    "php artisan route:cache",
+    "php artisan view:cache",
+    "php artisan storage:link || true",
+]
+
+[start]
+cmd = "php artisan serve --host 0.0.0.0 --port $PORT"
