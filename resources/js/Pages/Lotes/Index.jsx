@@ -19,8 +19,8 @@ import LoteFormModal from './Partials/LoteFormModal';
 function estadoVencimiento(fechaVencimiento, diasAlerta) {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
-    const vence = new Date(fechaVencimiento);
-    vence.setHours(0, 0, 0, 0);
+    const [y, m, d] = fechaVencimiento.split('-').map(Number);
+    const vence = new Date(y, m - 1, d);
 
     if (vence < hoy) {
         return 'vencido';

@@ -21,8 +21,8 @@ import { formatearMoneda } from '@/utils/format';
 function variantePorVencer(fechaVencimiento) {
     const hoy = new Date();
     hoy.setHours(0, 0, 0, 0);
-    const vence = new Date(fechaVencimiento);
-    vence.setHours(0, 0, 0, 0);
+    const [y, m, d] = fechaVencimiento.split('-').map(Number);
+    const vence = new Date(y, m - 1, d);
     const diff = Math.round((vence - hoy) / (1000 * 60 * 60 * 24));
     return diff <= 7 ? 'danger' : 'warning';
 }
@@ -34,7 +34,8 @@ function variantePorVencer(fechaVencimiento) {
  * @returns {string}
  */
 function formatearFecha(fecha) {
-    return new Date(fecha).toLocaleDateString('es-PE', {
+    const [y, m, d] = fecha.split('-').map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString('es-PE', {
         year:  'numeric',
         month: 'short',
         day:   'numeric',
