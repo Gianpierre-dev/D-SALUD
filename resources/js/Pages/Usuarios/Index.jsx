@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { IconPencil, IconTrash, IconPlus } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -11,12 +10,12 @@ import IconButton from '@/Components/IconButton';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import PrimaryButton from '@/Components/PrimaryButton';
 import UsuarioFormModal from './Partials/UsuarioFormModal';
+import { useFormModal } from '@/hooks/useFormModal';
+import { useDelete } from '@/hooks/useDelete';
 
 export default function Index({ usuarios, roles, filtros }) {
-    const [modalAbierto, setModalAbierto] = useState(false);
-    const [usuarioEdit, setUsuarioEdit] = useState(null);
-    const [usuarioEliminar, setUsuarioEliminar] = useState(null);
-    const [eliminando, setEliminando] = useState(false);
+    const modal = useFormModal();
+    const borrado = useDelete('usuarios.destroy');
 
     const buscar = (termino) =>
         router.get(
@@ -24,27 +23,6 @@ export default function Index({ usuarios, roles, filtros }) {
             { buscar: termino },
             { preserveState: true, replace: true },
         );
-
-    const abrirCrear = () => {
-        setUsuarioEdit(null);
-        setModalAbierto(true);
-    };
-
-    const abrirEditar = (usuario) => {
-        setUsuarioEdit(usuario);
-        setModalAbierto(true);
-    };
-
-    const confirmarEliminar = () => {
-        setEliminando(true);
-        router.delete(route('usuarios.destroy', usuarioEliminar.id), {
-            preserveScroll: true,
-            onFinish: () => {
-                setEliminando(false);
-                setUsuarioEliminar(null);
-            },
-        });
-    };
 
     const columns = [
         { key: 'name', label: 'Nombre' },
@@ -75,7 +53,7 @@ export default function Index({ usuarios, roles, filtros }) {
                             icon={IconPencil}
                             variant="primary"
                             title="Editar"
-                            onClick={() => abrirEditar(row)}
+                            onClick={() => modal.abrirEditar(row)}
                         />
                     </Can>
                     <Can permission="usuarios.delete">
@@ -83,7 +61,7 @@ export default function Index({ usuarios, roles, filtros }) {
                             icon={IconTrash}
                             variant="danger"
                             title="Eliminar"
-                            onClick={() => setUsuarioEliminar(row)}
+                            onClick={() => borrado.solicitar(row)}
                         />
                     </Can>
                 </div>
@@ -109,7 +87,7 @@ export default function Index({ usuarios, roles, filtros }) {
                         placeholder="Buscar por nombre o correo..."
                     />
                     <Can permission="usuarios.create">
-                        <PrimaryButton onClick={abrirCrear}>
+                        <PrimaryButton onClick={modal.abrirCrear}>
                             <IconPlus className="me-1 h-4 w-4" />
                             Nuevo usuario
                         </PrimaryButton>
@@ -128,20 +106,20 @@ export default function Index({ usuarios, roles, filtros }) {
             </div>
 
             <UsuarioFormModal
-                show={modalAbierto}
-                onClose={() => setModalAbierto(false)}
-                usuario={usuarioEdit}
+                show={modal.abierto}
+                onClose={modal.cerrar}
+                usuario={modal.entidad}
                 roles={roles}
             />
 
             <ConfirmDialog
-                show={Boolean(usuarioEliminar)}
+                show={Boolean(borrado.pendiente)}
                 title="Eliminar usuario"
-                message={`¿Está seguro de eliminar al usuario "${usuarioEliminar?.name}"? Esta acción no se puede deshacer.`}
+                message={`¿Está seguro de eliminar al usuario "${borrado.pendiente?.name}"? Esta acción no se puede deshacer.`}
                 confirmLabel="Eliminar"
-                processing={eliminando}
-                onConfirm={confirmarEliminar}
-                onClose={() => setUsuarioEliminar(null)}
+                processing={borrado.procesando}
+                onConfirm={borrado.confirmar}
+                onClose={borrado.cancelar}
             />
         </AuthenticatedLayout>
     );

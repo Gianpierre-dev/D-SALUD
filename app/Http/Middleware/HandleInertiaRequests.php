@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Middleware;
 
+use App\Http\Resources\AuthUserResource;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
@@ -40,23 +41,17 @@ class HandleInertiaRequests extends Middleware
                 'name' => config('app.name'),
             ],
             'auth' => [
-                'user' => $user ? [
-                    'id' => $user->id,
-                    'name' => $user->name,
-                    'email' => $user->email,
-                    // Roles y permisos se cachean por usuario con TTL corto: evita
-                    // resolver 3-4 queries spatie en cada navegación de Inertia.
-                    'roles' => Cache::remember(
-                        "user.{$user->id}.roles",
+                // AuthUserResource garantiza que nunca se exponga password,
+                // remember_token ni fechas internas del modelo al frontend.
+                // El payload completo (id/name/email/roles/permissions) se
+                // cachea como unidad para evitar queries Spatie en cada navegación.
+                'user' => $user
+                    ? Cache::remember(
+                        "user.{$user->id}.payload",
                         now()->addMinutes(10),
-                        fn () => $user->getRoleNames(),
-                    ),
-                    'permissions' => Cache::remember(
-                        "user.{$user->id}.permissions",
-                        now()->addMinutes(10),
-                        fn () => $user->getAllPermissions()->pluck('name'),
-                    ),
-                ] : null,
+                        fn () => (new AuthUserResource($user))->resolve(),
+                    )
+                    : null,
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

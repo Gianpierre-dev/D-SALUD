@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { IconPencil, IconTrash, IconPlus } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -12,12 +11,12 @@ import ConfirmDialog from '@/Components/ConfirmDialog';
 import PrimaryButton from '@/Components/PrimaryButton';
 import ProductoFormModal from './Partials/ProductoFormModal';
 import { formatearMoneda } from '@/utils/format';
+import { useFormModal } from '@/hooks/useFormModal';
+import { useDelete } from '@/hooks/useDelete';
 
 export default function Index({ productos, categorias, filtros }) {
-    const [modalAbierto, setModalAbierto] = useState(false);
-    const [productoEdit, setProductoEdit] = useState(null);
-    const [productoEliminar, setProductoEliminar] = useState(null);
-    const [eliminando, setEliminando] = useState(false);
+    const modal = useFormModal();
+    const borrado = useDelete('productos.destroy');
 
     const buscar = (termino) =>
         router.get(
@@ -25,27 +24,6 @@ export default function Index({ productos, categorias, filtros }) {
             { buscar: termino },
             { preserveState: true, replace: true },
         );
-
-    const abrirCrear = () => {
-        setProductoEdit(null);
-        setModalAbierto(true);
-    };
-
-    const abrirEditar = (producto) => {
-        setProductoEdit(producto);
-        setModalAbierto(true);
-    };
-
-    const confirmarEliminar = () => {
-        setEliminando(true);
-        router.delete(route('productos.destroy', productoEliminar.id), {
-            preserveScroll: true,
-            onFinish: () => {
-                setEliminando(false);
-                setProductoEliminar(null);
-            },
-        });
-    };
 
     const columns = [
         { key: 'codigo', label: 'Código' },
@@ -95,7 +73,7 @@ export default function Index({ productos, categorias, filtros }) {
                             icon={IconPencil}
                             variant="primary"
                             title="Editar"
-                            onClick={() => abrirEditar(row)}
+                            onClick={() => modal.abrirEditar(row)}
                         />
                     </Can>
                     <Can permission="productos.delete">
@@ -103,7 +81,7 @@ export default function Index({ productos, categorias, filtros }) {
                             icon={IconTrash}
                             variant="danger"
                             title="Eliminar"
-                            onClick={() => setProductoEliminar(row)}
+                            onClick={() => borrado.solicitar(row)}
                         />
                     </Can>
                 </div>
@@ -129,7 +107,7 @@ export default function Index({ productos, categorias, filtros }) {
                         placeholder="Buscar producto..."
                     />
                     <Can permission="productos.create">
-                        <PrimaryButton onClick={abrirCrear}>
+                        <PrimaryButton onClick={modal.abrirCrear}>
                             <IconPlus className="me-1 h-4 w-4" />
                             Nuevo producto
                         </PrimaryButton>
@@ -148,20 +126,20 @@ export default function Index({ productos, categorias, filtros }) {
             </div>
 
             <ProductoFormModal
-                show={modalAbierto}
-                onClose={() => setModalAbierto(false)}
-                producto={productoEdit}
+                show={modal.abierto}
+                onClose={modal.cerrar}
+                producto={modal.entidad}
                 categorias={categorias}
             />
 
             <ConfirmDialog
-                show={Boolean(productoEliminar)}
+                show={Boolean(borrado.pendiente)}
                 title="Eliminar producto"
-                message={`¿Está seguro de eliminar el producto "${productoEliminar?.nombre}"? Esta acción no se puede deshacer.`}
+                message={`¿Está seguro de eliminar el producto "${borrado.pendiente?.nombre}"? Esta acción no se puede deshacer.`}
                 confirmLabel="Eliminar"
-                processing={eliminando}
-                onConfirm={confirmarEliminar}
-                onClose={() => setProductoEliminar(null)}
+                processing={borrado.procesando}
+                onConfirm={borrado.confirmar}
+                onClose={borrado.cancelar}
             />
         </AuthenticatedLayout>
     );

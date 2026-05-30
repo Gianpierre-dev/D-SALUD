@@ -43,117 +43,22 @@ class VentaService
     public function registrar(array $items, int $userId): Venta
     {
         return DB::transaction(function () use ($items, $userId): Venta {
-            // 1. Crear la venta con total provisional.
             $venta = Venta::create([
                 'user_id' => $userId,
                 'total'   => 0,
                 'estado'  => Venta::ESTADO_COMPLETADA,
             ]);
 
-            $totalVenta = 0;
-
+            $total = 0.0;
             foreach ($items as $item) {
-                $productoId = (int) $item['producto_id'];
-                $cantidadPendiente = (int) $item['cantidad'];
-
-                /** @var Producto|null $producto */
-                $producto = Producto::find($productoId);
-
-                // Solo se venden productos activos.
-                if ($producto === null || ! $producto->activo) {
-                    Log::warning('Venta rechazada: producto inactivo o inexistente', [
-                        'user_id' => $userId,
-                        'producto_id' => $productoId,
-                    ]);
-                    throw new \RuntimeException(
-                        'El producto seleccionado no está disponible para la venta.'
-                    );
-                }
-
-                // 2. Lotes con stock y NO vencidos, ordenados FEFO, bloqueados para esta transacción.
-                //    Excluir vencidos es crítico en una botica: nunca dispensar producto vencido.
-                $lotes = Lote::where('producto_id', $productoId)
-                    ->where('stock', '>', 0)
-                    ->where('fecha_vencimiento', '>=', now()->toDateString())
-                    ->orderBy('fecha_vencimiento', 'asc')
-                    ->lockForUpdate()
-                    ->get();
-
-                // 3. Descontar stock lote a lote (FEFO).
-                foreach ($lotes as $lote) {
-                    if ($cantidadPendiente === 0) {
-                        break;
-                    }
-
-                    $tomado = min($cantidadPendiente, $lote->stock);
-
-                    $lote->stock -= $tomado;
-                    $lote->save();
-
-                    $subtotal = $tomado * (float) $producto->precio_venta;
-
-                    DetalleVenta::create([
-                        'venta_id'       => $venta->id,
-                        'lote_id'        => $lote->id,
-                        'producto_id'    => $productoId,
-                        'cantidad'       => $tomado,
-                        'precio_unitario' => $producto->precio_venta,
-                        'subtotal'       => $subtotal,
-                    ]);
-
-                    $totalVenta      += $subtotal;
-                    $cantidadPendiente -= $tomado;
-                }
-
-                // 4. Si sobra cantidad => stock insuficiente => rollback.
-                if ($cantidadPendiente > 0) {
-                    Log::warning('Venta rechazada: stock insuficiente', [
-                        'user_id' => $userId,
-                        'producto_id' => $productoId,
-                        'producto' => $producto->nombre,
-                        'cantidad_pendiente' => $cantidadPendiente,
-                    ]);
-                    throw new \RuntimeException(
-                        "Stock insuficiente para el producto {$producto->nombre}."
-                    );
-                }
+                $total += $this->procesarItemDeVenta($venta, $item, $userId);
             }
 
-            // 5. Actualizar total de la venta.
-            $venta->total = $totalVenta;
+            $venta->total = $total;
             $venta->save();
 
-            // 6. Generar boleta correlativa.
-            //    Se usa la tabla `secuencias_boleta` con lockForUpdate sobre la fila
-            //    de la serie: dos cajas concurrentes serializan acceso a esa fila y
-            //    nunca obtienen el mismo número (a diferencia de MAX(numero)+1, que
-             //   sufre race condition bajo READ COMMITTED).
-            $serie = config('dsalud.boleta.serie');
+            $boleta = $this->generarBoletaCorrelativa($venta);
 
-            DB::table('secuencias_boleta')->updateOrInsert(
-                ['serie' => $serie],
-                ['updated_at' => now()],
-            );
-
-            $ultimo = (int) DB::table('secuencias_boleta')
-                ->where('serie', $serie)
-                ->lockForUpdate()
-                ->value('ultimo_numero');
-
-            $numero = $ultimo + 1;
-
-            DB::table('secuencias_boleta')
-                ->where('serie', $serie)
-                ->update(['ultimo_numero' => $numero, 'updated_at' => now()]);
-
-            $boleta = Boleta::create([
-                'venta_id'      => $venta->id,
-                'serie'         => $serie,
-                'numero'        => $numero,
-                'fecha_emision' => now(),
-            ]);
-
-            // 7. Auditoría.
             $this->auditoria->registrar(
                 'ventas',
                 'registrar',
@@ -162,6 +67,124 @@ class VentaService
 
             return $venta->load('detalles.producto', 'boleta');
         });
+    }
+
+    /**
+     * Procesa un ítem del POS: valida el producto, descuenta el stock por FEFO
+     * (excluyendo lotes vencidos) y crea las líneas de detalle correspondientes.
+     *
+     * @param  array{producto_id: int|string, cantidad: int|string}  $item
+     * @return float  Subtotal aportado por este ítem al total de la venta.
+     * @throws \RuntimeException  Producto inactivo / stock insuficiente.
+     */
+    private function procesarItemDeVenta(Venta $venta, array $item, int $userId): float
+    {
+        $productoId = (int) $item['producto_id'];
+        $cantidadPendiente = (int) $item['cantidad'];
+
+        $producto = Producto::find($productoId);
+
+        if ($producto === null || ! $producto->activo) {
+            Log::warning('Venta rechazada: producto inactivo o inexistente', [
+                'user_id' => $userId,
+                'producto_id' => $productoId,
+            ]);
+            throw new \RuntimeException(
+                'El producto seleccionado no está disponible para la venta.'
+            );
+        }
+
+        $lotes = $this->lotesVigentesParaFEFO($productoId);
+
+        $subtotal = 0.0;
+        foreach ($lotes as $lote) {
+            if ($cantidadPendiente === 0) {
+                break;
+            }
+
+            $tomado = min($cantidadPendiente, $lote->stock);
+
+            $lote->stock -= $tomado;
+            $lote->save();
+
+            $aporte = $tomado * (float) $producto->precio_venta;
+
+            DetalleVenta::create([
+                'venta_id'        => $venta->id,
+                'lote_id'         => $lote->id,
+                'producto_id'     => $productoId,
+                'cantidad'        => $tomado,
+                'precio_unitario' => $producto->precio_venta,
+                'subtotal'        => $aporte,
+            ]);
+
+            $subtotal           += $aporte;
+            $cantidadPendiente  -= $tomado;
+        }
+
+        if ($cantidadPendiente > 0) {
+            Log::warning('Venta rechazada: stock insuficiente', [
+                'user_id' => $userId,
+                'producto_id' => $productoId,
+                'producto' => $producto->nombre,
+                'cantidad_pendiente' => $cantidadPendiente,
+            ]);
+            throw new \RuntimeException(
+                "Stock insuficiente para el producto {$producto->nombre}."
+            );
+        }
+
+        return $subtotal;
+    }
+
+    /**
+     * Lotes con stock y NO vencidos para el producto, ordenados FEFO y bloqueados
+     * para la transacción actual. Excluir vencidos es crítico: nunca dispensar
+     * producto vencido en una botica.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, Lote>
+     */
+    private function lotesVigentesParaFEFO(int $productoId): \Illuminate\Database\Eloquent\Collection
+    {
+        return Lote::where('producto_id', $productoId)
+            ->where('stock', '>', 0)
+            ->where('fecha_vencimiento', '>=', now()->toDateString())
+            ->orderBy('fecha_vencimiento', 'asc')
+            ->lockForUpdate()
+            ->get();
+    }
+
+    /**
+     * Genera la boleta correlativa de la venta usando la tabla `secuencias_boleta`
+     * con lockForUpdate sobre la fila de la serie. Esto serializa el acceso entre
+     * cajas concurrentes y elimina el race condition que tenía el MAX(numero)+1.
+     */
+    private function generarBoletaCorrelativa(Venta $venta): Boleta
+    {
+        $serie = (string) config('dsalud.boleta.serie');
+
+        DB::table('secuencias_boleta')->updateOrInsert(
+            ['serie' => $serie],
+            ['updated_at' => now()],
+        );
+
+        $ultimo = (int) DB::table('secuencias_boleta')
+            ->where('serie', $serie)
+            ->lockForUpdate()
+            ->value('ultimo_numero');
+
+        $numero = $ultimo + 1;
+
+        DB::table('secuencias_boleta')
+            ->where('serie', $serie)
+            ->update(['ultimo_numero' => $numero, 'updated_at' => now()]);
+
+        return Boleta::create([
+            'venta_id'      => $venta->id,
+            'serie'         => $serie,
+            'numero'        => $numero,
+            'fecha_emision' => now(),
+        ]);
     }
 
     /**

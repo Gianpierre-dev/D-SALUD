@@ -123,11 +123,14 @@ class UsuarioService
 
     /**
      * Invalida la cache de roles/permisos del usuario en HandleInertiaRequests.
+     * Se mantienen las claves granulares antiguas por compatibilidad y se agrega
+     * la clave unificada introducida por AuthUserResource.
      */
     private function olvidarCachePermisos(int $userId): void
     {
         Cache::forget("user.{$userId}.roles");
         Cache::forget("user.{$userId}.permissions");
+        Cache::forget("user.{$userId}.payload");
     }
 
     /**

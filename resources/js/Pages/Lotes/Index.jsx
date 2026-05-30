@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { IconPencil, IconTrash, IconPlus } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -11,6 +10,8 @@ import IconButton from '@/Components/IconButton';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import PrimaryButton from '@/Components/PrimaryButton';
 import LoteFormModal from './Partials/LoteFormModal';
+import { useFormModal } from '@/hooks/useFormModal';
+import { useDelete } from '@/hooks/useDelete';
 
 /**
  * Determina el estado de vencimiento del lote.
@@ -46,10 +47,8 @@ function formatearFecha(fecha) {
 }
 
 export default function Index({ lotes, productos, proveedores, filtros, diasAlerta }) {
-    const [modalAbierto, setModalAbierto] = useState(false);
-    const [loteEdit, setLoteEdit] = useState(null);
-    const [loteEliminar, setLoteEliminar] = useState(null);
-    const [eliminando, setEliminando] = useState(false);
+    const modal = useFormModal();
+    const borrado = useDelete('lotes.destroy');
 
     const buscar = (termino) =>
         router.get(
@@ -57,27 +56,6 @@ export default function Index({ lotes, productos, proveedores, filtros, diasAler
             { buscar: termino },
             { preserveState: true, replace: true },
         );
-
-    const abrirCrear = () => {
-        setLoteEdit(null);
-        setModalAbierto(true);
-    };
-
-    const abrirEditar = (lote) => {
-        setLoteEdit(lote);
-        setModalAbierto(true);
-    };
-
-    const confirmarEliminar = () => {
-        setEliminando(true);
-        router.delete(route('lotes.destroy', loteEliminar.id), {
-            preserveScroll: true,
-            onFinish: () => {
-                setEliminando(false);
-                setLoteEliminar(null);
-            },
-        });
-    };
 
     const columns = [
         {
@@ -126,7 +104,7 @@ export default function Index({ lotes, productos, proveedores, filtros, diasAler
                             icon={IconPencil}
                             variant="primary"
                             title="Editar"
-                            onClick={() => abrirEditar(row)}
+                            onClick={() => modal.abrirEditar(row)}
                         />
                     </Can>
                     <Can permission="lotes.delete">
@@ -134,7 +112,7 @@ export default function Index({ lotes, productos, proveedores, filtros, diasAler
                             icon={IconTrash}
                             variant="danger"
                             title="Eliminar"
-                            onClick={() => setLoteEliminar(row)}
+                            onClick={() => borrado.solicitar(row)}
                         />
                     </Can>
                 </div>
@@ -160,7 +138,7 @@ export default function Index({ lotes, productos, proveedores, filtros, diasAler
                         placeholder="Buscar lote o producto..."
                     />
                     <Can permission="lotes.create">
-                        <PrimaryButton onClick={abrirCrear}>
+                        <PrimaryButton onClick={modal.abrirCrear}>
                             <IconPlus className="me-1 h-4 w-4" />
                             Nuevo lote
                         </PrimaryButton>
@@ -179,21 +157,21 @@ export default function Index({ lotes, productos, proveedores, filtros, diasAler
             </div>
 
             <LoteFormModal
-                show={modalAbierto}
-                onClose={() => setModalAbierto(false)}
-                lote={loteEdit}
+                show={modal.abierto}
+                onClose={modal.cerrar}
+                lote={modal.entidad}
                 productos={productos}
                 proveedores={proveedores}
             />
 
             <ConfirmDialog
-                show={Boolean(loteEliminar)}
+                show={Boolean(borrado.pendiente)}
                 title="Eliminar lote"
-                message={`¿Está seguro de eliminar el lote "${loteEliminar?.codigo_lote}"? Esta acción no se puede deshacer.`}
+                message={`¿Está seguro de eliminar el lote "${borrado.pendiente?.codigo_lote}"? Esta acción no se puede deshacer.`}
                 confirmLabel="Eliminar"
-                processing={eliminando}
-                onConfirm={confirmarEliminar}
-                onClose={() => setLoteEliminar(null)}
+                processing={borrado.procesando}
+                onConfirm={borrado.confirmar}
+                onClose={borrado.cancelar}
             />
         </AuthenticatedLayout>
     );

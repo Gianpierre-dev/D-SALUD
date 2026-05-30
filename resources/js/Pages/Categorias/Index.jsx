@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { IconPencil, IconTrash, IconPlus } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -11,12 +10,12 @@ import IconButton from '@/Components/IconButton';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import PrimaryButton from '@/Components/PrimaryButton';
 import CategoriaFormModal from './Partials/CategoriaFormModal';
+import { useFormModal } from '@/hooks/useFormModal';
+import { useDelete } from '@/hooks/useDelete';
 
 export default function Index({ categorias, filtros }) {
-    const [modalAbierto, setModalAbierto] = useState(false);
-    const [categoriaEdit, setCategoriaEdit] = useState(null);
-    const [categoriaEliminar, setCategoriaEliminar] = useState(null);
-    const [eliminando, setEliminando] = useState(false);
+    const modal = useFormModal();
+    const borrado = useDelete('categorias.destroy');
 
     const buscar = (termino) =>
         router.get(
@@ -24,27 +23,6 @@ export default function Index({ categorias, filtros }) {
             { buscar: termino },
             { preserveState: true, replace: true },
         );
-
-    const abrirCrear = () => {
-        setCategoriaEdit(null);
-        setModalAbierto(true);
-    };
-
-    const abrirEditar = (categoria) => {
-        setCategoriaEdit(categoria);
-        setModalAbierto(true);
-    };
-
-    const confirmarEliminar = () => {
-        setEliminando(true);
-        router.delete(route('categorias.destroy', categoriaEliminar.id), {
-            preserveScroll: true,
-            onFinish: () => {
-                setEliminando(false);
-                setCategoriaEliminar(null);
-            },
-        });
-    };
 
     const columns = [
         { key: 'nombre', label: 'Nombre' },
@@ -72,7 +50,7 @@ export default function Index({ categorias, filtros }) {
                             icon={IconPencil}
                             variant="primary"
                             title="Editar"
-                            onClick={() => abrirEditar(row)}
+                            onClick={() => modal.abrirEditar(row)}
                         />
                     </Can>
                     <Can permission="categorias.delete">
@@ -80,7 +58,7 @@ export default function Index({ categorias, filtros }) {
                             icon={IconTrash}
                             variant="danger"
                             title="Eliminar"
-                            onClick={() => setCategoriaEliminar(row)}
+                            onClick={() => borrado.solicitar(row)}
                         />
                     </Can>
                 </div>
@@ -106,7 +84,7 @@ export default function Index({ categorias, filtros }) {
                         placeholder="Buscar categoría..."
                     />
                     <Can permission="categorias.create">
-                        <PrimaryButton onClick={abrirCrear}>
+                        <PrimaryButton onClick={modal.abrirCrear}>
                             <IconPlus className="me-1 h-4 w-4" />
                             Nueva categoría
                         </PrimaryButton>
@@ -125,19 +103,19 @@ export default function Index({ categorias, filtros }) {
             </div>
 
             <CategoriaFormModal
-                show={modalAbierto}
-                onClose={() => setModalAbierto(false)}
-                categoria={categoriaEdit}
+                show={modal.abierto}
+                onClose={modal.cerrar}
+                categoria={modal.entidad}
             />
 
             <ConfirmDialog
-                show={Boolean(categoriaEliminar)}
+                show={Boolean(borrado.pendiente)}
                 title="Eliminar categoría"
-                message={`¿Está seguro de eliminar la categoría "${categoriaEliminar?.nombre}"? Esta acción no se puede deshacer.`}
+                message={`¿Está seguro de eliminar la categoría "${borrado.pendiente?.nombre}"? Esta acción no se puede deshacer.`}
                 confirmLabel="Eliminar"
-                processing={eliminando}
-                onConfirm={confirmarEliminar}
-                onClose={() => setCategoriaEliminar(null)}
+                processing={borrado.procesando}
+                onConfirm={borrado.confirmar}
+                onClose={borrado.cancelar}
             />
         </AuthenticatedLayout>
     );

@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { IconPencil, IconTrash, IconPlus } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -11,12 +10,12 @@ import IconButton from '@/Components/IconButton';
 import ConfirmDialog from '@/Components/ConfirmDialog';
 import PrimaryButton from '@/Components/PrimaryButton';
 import ProveedorFormModal from './Partials/ProveedorFormModal';
+import { useFormModal } from '@/hooks/useFormModal';
+import { useDelete } from '@/hooks/useDelete';
 
 export default function Index({ proveedores, filtros }) {
-    const [modalAbierto, setModalAbierto] = useState(false);
-    const [proveedorEdit, setProveedorEdit] = useState(null);
-    const [proveedorEliminar, setProveedorEliminar] = useState(null);
-    const [eliminando, setEliminando] = useState(false);
+    const modal = useFormModal();
+    const borrado = useDelete('proveedores.destroy');
 
     const buscar = (termino) =>
         router.get(
@@ -24,27 +23,6 @@ export default function Index({ proveedores, filtros }) {
             { buscar: termino },
             { preserveState: true, replace: true },
         );
-
-    const abrirCrear = () => {
-        setProveedorEdit(null);
-        setModalAbierto(true);
-    };
-
-    const abrirEditar = (proveedor) => {
-        setProveedorEdit(proveedor);
-        setModalAbierto(true);
-    };
-
-    const confirmarEliminar = () => {
-        setEliminando(true);
-        router.delete(route('proveedores.destroy', proveedorEliminar.id), {
-            preserveScroll: true,
-            onFinish: () => {
-                setEliminando(false);
-                setProveedorEliminar(null);
-            },
-        });
-    };
 
     const columns = [
         { key: 'ruc', label: 'RUC' },
@@ -78,7 +56,7 @@ export default function Index({ proveedores, filtros }) {
                             icon={IconPencil}
                             variant="primary"
                             title="Editar"
-                            onClick={() => abrirEditar(row)}
+                            onClick={() => modal.abrirEditar(row)}
                         />
                     </Can>
                     <Can permission="proveedores.delete">
@@ -86,7 +64,7 @@ export default function Index({ proveedores, filtros }) {
                             icon={IconTrash}
                             variant="danger"
                             title="Eliminar"
-                            onClick={() => setProveedorEliminar(row)}
+                            onClick={() => borrado.solicitar(row)}
                         />
                     </Can>
                 </div>
@@ -112,7 +90,7 @@ export default function Index({ proveedores, filtros }) {
                         placeholder="Buscar proveedor..."
                     />
                     <Can permission="proveedores.create">
-                        <PrimaryButton onClick={abrirCrear}>
+                        <PrimaryButton onClick={modal.abrirCrear}>
                             <IconPlus className="me-1 h-4 w-4" />
                             Nuevo proveedor
                         </PrimaryButton>
@@ -131,19 +109,19 @@ export default function Index({ proveedores, filtros }) {
             </div>
 
             <ProveedorFormModal
-                show={modalAbierto}
-                onClose={() => setModalAbierto(false)}
-                proveedor={proveedorEdit}
+                show={modal.abierto}
+                onClose={modal.cerrar}
+                proveedor={modal.entidad}
             />
 
             <ConfirmDialog
-                show={Boolean(proveedorEliminar)}
+                show={Boolean(borrado.pendiente)}
                 title="Eliminar proveedor"
-                message={`¿Está seguro de eliminar el proveedor "${proveedorEliminar?.razon_social}"? Esta acción no se puede deshacer.`}
+                message={`¿Está seguro de eliminar el proveedor "${borrado.pendiente?.razon_social}"? Esta acción no se puede deshacer.`}
                 confirmLabel="Eliminar"
-                processing={eliminando}
-                onConfirm={confirmarEliminar}
-                onClose={() => setProveedorEliminar(null)}
+                processing={borrado.procesando}
+                onConfirm={borrado.confirmar}
+                onClose={borrado.cancelar}
             />
         </AuthenticatedLayout>
     );
