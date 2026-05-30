@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Empresa;
 use App\Models\Lote;
 use App\Models\Producto;
 use App\Models\User;
@@ -30,6 +31,13 @@ class VentaAccesoTest extends TestCase
         parent::setUp();
 
         $this->seed(RolePermissionSeeder::class);
+
+        // La vista de boleta requiere la configuración singleton de empresa.
+        Empresa::create([
+            'razon_social' => "Botica D'Salud S.A.C.",
+            'ruc' => '20600000001',
+            'direccion' => 'Lima, Perú',
+        ]);
 
         /** @var VentaService $servicio */
         $this->servicio = app(VentaService::class);

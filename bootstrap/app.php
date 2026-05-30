@@ -25,5 +25,27 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        //
+        // Renderiza páginas de error amigables (Inertia) en producción para
+        // 403/404/419/500/503. En local se mantiene el debugger de Laravel.
+        $exceptions->render(function (\Throwable $e, \Illuminate\Http\Request $request) {
+            if (! app()->environment('production')) {
+                return null;
+            }
+
+            if ($request->expectsJson()) {
+                return null;
+            }
+
+            $status = method_exists($e, 'getStatusCode')
+                ? (int) $e->getStatusCode()
+                : 500;
+
+            if (! in_array($status, [403, 404, 419, 500, 503], true)) {
+                return null;
+            }
+
+            return \Inertia\Inertia::render('Errors/Error', ['status' => $status])
+                ->toResponse($request)
+                ->setStatusCode($status);
+        });
     })->create();
