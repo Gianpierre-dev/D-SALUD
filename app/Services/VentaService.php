@@ -13,6 +13,7 @@ use App\Models\Venta;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Lógica de negocio del módulo de ventas.
@@ -60,6 +61,10 @@ class VentaService
 
                 // Solo se venden productos activos.
                 if ($producto === null || ! $producto->activo) {
+                    Log::warning('Venta rechazada: producto inactivo o inexistente', [
+                        'user_id' => $userId,
+                        'producto_id' => $productoId,
+                    ]);
                     throw new \RuntimeException(
                         'El producto seleccionado no está disponible para la venta.'
                     );
@@ -69,7 +74,7 @@ class VentaService
                 //    Excluir vencidos es crítico en una botica: nunca dispensar producto vencido.
                 $lotes = Lote::where('producto_id', $productoId)
                     ->where('stock', '>', 0)
-                    ->whereDate('fecha_vencimiento', '>=', now()->toDateString())
+                    ->where('fecha_vencimiento', '>=', now()->toDateString())
                     ->orderBy('fecha_vencimiento', 'asc')
                     ->lockForUpdate()
                     ->get();
@@ -102,6 +107,12 @@ class VentaService
 
                 // 4. Si sobra cantidad => stock insuficiente => rollback.
                 if ($cantidadPendiente > 0) {
+                    Log::warning('Venta rechazada: stock insuficiente', [
+                        'user_id' => $userId,
+                        'producto_id' => $productoId,
+                        'producto' => $producto->nombre,
+                        'cantidad_pendiente' => $cantidadPendiente,
+                    ]);
                     throw new \RuntimeException(
                         "Stock insuficiente para el producto {$producto->nombre}."
                     );
@@ -201,7 +212,12 @@ class VentaService
         return Venta::with(['vendedor', 'boleta'])
             ->when(
                 $filtros['fecha'] ?? null,
-                fn ($q, $fecha) => $q->whereDate('created_at', $fecha)
+                // whereBetween sargable: usa el índice (ventas_estado_created_idx).
+                // whereDate envuelve la columna en DATE() e impide el uso del índice.
+                fn ($q, $fecha) => $q->whereBetween('created_at', [
+                    \Carbon\Carbon::parse($fecha)->startOfDay(),
+                    \Carbon\Carbon::parse($fecha)->endOfDay(),
+                ])
             )
             ->when(
                 $filtros['vendedor_id'] ?? null,
@@ -222,11 +238,23 @@ class VentaService
      */
     public function productosDisponibles(): Collection
     {
+        // El stock disponible para el POS solo cuenta lotes NO vencidos con stock,
+        // alineado con el FEFO de registrar(). Sin este filtro, el cajero veía
+        // productos "con stock" cuyos lotes estaban todos vencidos, y la venta
+        // fallaba con RuntimeException "Stock insuficiente".
+        $stockVigente = DB::table('lotes')
+            ->select('producto_id', DB::raw('COALESCE(SUM(stock), 0) as stock_total'))
+            ->where('stock', '>', 0)
+            ->where('fecha_vencimiento', '>=', now()->toDateString())
+            ->groupBy('producto_id');
+
         return Producto::query()
-            ->where('activo', true)
-            ->withSum('lotes as stock_total', 'stock')
-            ->having('stock_total', '>', 0)
-            ->get(['id', 'codigo', 'nombre', 'precio_venta']);
+            ->where('productos.activo', true)
+            ->joinSub($stockVigente, 'agg', 'agg.producto_id', '=', 'productos.id')
+            ->select('productos.id', 'productos.codigo', 'productos.nombre', 'productos.precio_venta')
+            ->selectRaw('agg.stock_total as stock_total')
+            ->orderBy('productos.nombre')
+            ->get();
     }
 
     /**

@@ -11,6 +11,7 @@ use App\Models\RegistroAuditoria;
 use App\Models\Venta;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Lógica de datos para el módulo de reportes.
@@ -82,14 +83,19 @@ class ReporteService
      */
     public function lotesStockBajo(): Collection
     {
+        // Filtrado en SQL (no en memoria): escalable a cientos de miles de productos.
+        $aggregate = DB::table('lotes')
+            ->select('producto_id', DB::raw('COALESCE(SUM(stock), 0) as lotes_sum_stock'))
+            ->groupBy('producto_id');
+
         return Producto::query()
-            ->withSum('lotes', 'stock')
-            ->where('activo', true)
-            ->get()
-            ->filter(fn (Producto $producto): bool =>
-                (int) $producto->lotes_sum_stock <= $producto->stock_minimo
-            )
-            ->values();
+            ->where('productos.activo', true)
+            ->leftJoinSub($aggregate, 'agg', 'agg.producto_id', '=', 'productos.id')
+            ->select('productos.*')
+            ->selectRaw('COALESCE(agg.lotes_sum_stock, 0) as lotes_sum_stock')
+            ->whereRaw('COALESCE(agg.lotes_sum_stock, 0) <= productos.stock_minimo')
+            ->orderBy('productos.nombre')
+            ->get();
     }
 
     /**

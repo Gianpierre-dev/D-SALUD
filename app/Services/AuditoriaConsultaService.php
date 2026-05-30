@@ -36,7 +36,10 @@ class AuditoriaConsultaService
                 }),
             )
             ->when($modulo, fn ($q, $m) => $q->where('modulo', $m))
-            ->when($fecha, fn ($q, $f) => $q->whereDate('created_at', $f))
+            ->when($fecha, fn ($q, $f) => $q->whereBetween('created_at', [
+                \Carbon\Carbon::parse($f)->startOfDay(),
+                \Carbon\Carbon::parse($f)->endOfDay(),
+            ]))
             ->orderByDesc('created_at')
             ->paginate(config('dsalud.paginacion.por_pagina'))
             ->withQueryString();

@@ -9,6 +9,7 @@ use App\Models\Producto;
 use App\Models\Venta;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Lógica de negocio para los indicadores del dashboard del día.
@@ -22,8 +23,9 @@ class DashboardService
      */
     public function indicadoresDelDia(): array
     {
+        // whereBetween sargable: usa el índice (ventas_estado_created_idx).
         $ventas = Venta::query()
-            ->whereDate('created_at', Carbon::today())
+            ->whereBetween('created_at', [Carbon::today(), Carbon::today()->endOfDay()])
             ->where('estado', Venta::ESTADO_COMPLETADA)
             ->withSum('detalles as total_productos_vendidos', 'cantidad')
             ->get();
@@ -43,16 +45,22 @@ class DashboardService
      */
     public function productosStockBajo(): Collection
     {
+        // Filtrado en SQL: en lugar de traer TODOS los productos a memoria y filtrar
+        // con PHP (no escala con miles de filas), se hace un JOIN con la suma de stock
+        // por producto y se compara contra stock_minimo directamente en la base.
+        $aggregate = DB::table('lotes')
+            ->select('producto_id', DB::raw('COALESCE(SUM(stock), 0) as stock_total'))
+            ->groupBy('producto_id');
+
         return Producto::query()
-            ->where('activo', true)
-            ->withSum('lotes as stock_total', 'stock')
-            ->get()
-            ->filter(
-                fn (Producto $producto) =>
-                    ($producto->stock_total === null || (int) $producto->stock_total <= $producto->stock_minimo)
-            )
-            ->take(10)
-            ->values();
+            ->where('productos.activo', true)
+            ->leftJoinSub($aggregate, 'agg', 'agg.producto_id', '=', 'productos.id')
+            ->select('productos.*')
+            ->selectRaw('COALESCE(agg.stock_total, 0) as stock_total')
+            ->whereRaw('COALESCE(agg.stock_total, 0) <= productos.stock_minimo')
+            ->orderBy('productos.nombre')
+            ->limit(10)
+            ->get();
     }
 
     /**
