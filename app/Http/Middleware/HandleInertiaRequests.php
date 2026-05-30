@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Middleware;
 
 class HandleInertiaRequests extends Middleware
@@ -43,8 +44,18 @@ class HandleInertiaRequests extends Middleware
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
-                    'roles' => $user->getRoleNames(),
-                    'permissions' => $user->getAllPermissions()->pluck('name'),
+                    // Roles y permisos se cachean por usuario con TTL corto: evita
+                    // resolver 3-4 queries spatie en cada navegación de Inertia.
+                    'roles' => Cache::remember(
+                        "user.{$user->id}.roles",
+                        now()->addMinutes(10),
+                        fn () => $user->getRoleNames(),
+                    ),
+                    'permissions' => Cache::remember(
+                        "user.{$user->id}.permissions",
+                        now()->addMinutes(10),
+                        fn () => $user->getAllPermissions()->pluck('name'),
+                    ),
                 ] : null,
             ],
             'flash' => [

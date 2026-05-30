@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\Rol;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -41,18 +42,20 @@ class RolService
      */
     public function crear(array $datos): Role
     {
-        $rol = Role::create([
-            'name'       => $datos['name'],
-            'guard_name' => 'web',
-        ]);
+        return DB::transaction(function () use ($datos): Role {
+            $rol = Role::create([
+                'name'       => $datos['name'],
+                'guard_name' => 'web',
+            ]);
 
-        if (!empty($datos['permissions'])) {
-            $rol->syncPermissions($datos['permissions']);
-        }
+            if (! empty($datos['permissions'])) {
+                $rol->syncPermissions($datos['permissions']);
+            }
 
-        $this->auditoria->registrar('roles', 'crear', "Rol #{$rol->id}: {$rol->name}");
+            $this->auditoria->registrar('roles', 'crear', "Rol #{$rol->id}: {$rol->name}");
 
-        return $rol;
+            return $rol;
+        });
     }
 
     /**
@@ -70,12 +73,14 @@ class RolService
             );
         }
 
-        $rol->update(['name' => $datos['name']]);
-        $rol->syncPermissions($datos['permissions'] ?? []);
+        return DB::transaction(function () use ($rol, $datos): Role {
+            $rol->update(['name' => $datos['name']]);
+            $rol->syncPermissions($datos['permissions'] ?? []);
 
-        $this->auditoria->registrar('roles', 'actualizar', "Rol #{$rol->id}: {$rol->name}");
+            $this->auditoria->registrar('roles', 'actualizar', "Rol #{$rol->id}: {$rol->name}");
 
-        return $rol;
+            return $rol;
+        });
     }
 
     /**

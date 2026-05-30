@@ -8,6 +8,7 @@ use App\Enums\Rol;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use RuntimeException;
@@ -92,6 +93,8 @@ class UsuarioService
 
             $this->auditoria->registrar('usuarios', 'actualizar', "Usuario #{$user->id}: {$user->name} ({$user->email})");
 
+            $this->olvidarCachePermisos($user->id);
+
             return $user;
         });
     }
@@ -114,7 +117,17 @@ class UsuarioService
         }
 
         $this->auditoria->registrar('usuarios', 'eliminar', "Usuario #{$user->id}: {$user->name} ({$user->email})");
+        $this->olvidarCachePermisos($user->id);
         $user->delete();
+    }
+
+    /**
+     * Invalida la cache de roles/permisos del usuario en HandleInertiaRequests.
+     */
+    private function olvidarCachePermisos(int $userId): void
+    {
+        Cache::forget("user.{$userId}.roles");
+        Cache::forget("user.{$userId}.permissions");
     }
 
     /**

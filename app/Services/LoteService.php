@@ -9,6 +9,7 @@ use App\Models\Producto;
 use App\Models\Proveedor;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Lógica de negocio del módulo de lotes (inventario).
@@ -89,14 +90,20 @@ class LoteService
 
     public function eliminar(Lote $lote): void
     {
-        // No se puede eliminar un lote que ya participó en ventas (integridad histórica).
-        if ($lote->detalleVentas()->exists()) {
-            throw new \RuntimeException(
-                'No se puede eliminar el lote porque tiene ventas asociadas.'
-            );
-        }
+        // Transacción con lock pesimista: cierra la ventana TOCTOU entre el check
+        // y el delete. Sin esto, una venta concurrente podría crear un detalle
+        // sobre el lote justo después del exists() y antes del delete().
+        DB::transaction(function () use (&$lote): void {
+            $lote = Lote::lockForUpdate()->findOrFail($lote->id);
 
-        $this->auditoria->registrar('lotes', 'eliminar', "Lote #{$lote->id}: {$lote->codigo_lote}");
-        $lote->delete();
+            if ($lote->detalleVentas()->exists()) {
+                throw new \RuntimeException(
+                    'No se puede eliminar el lote porque tiene ventas asociadas.'
+                );
+            }
+
+            $this->auditoria->registrar('lotes', 'eliminar', "Lote #{$lote->id}: {$lote->codigo_lote}");
+            $lote->delete();
+        });
     }
 }

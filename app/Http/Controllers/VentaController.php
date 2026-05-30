@@ -7,8 +7,8 @@ namespace App\Http\Controllers;
 use App\Enums\Rol;
 use App\Http\Requests\Venta\AnularVentaRequest;
 use App\Http\Requests\Venta\StoreVentaRequest;
-use App\Models\Empresa;
 use App\Models\Venta;
+use App\Services\EmpresaService;
 use App\Services\VentaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -17,8 +17,10 @@ use Inertia\Response;
 
 class VentaController extends Controller
 {
-    public function __construct(private readonly VentaService $service)
-    {
+    public function __construct(
+        private readonly VentaService $service,
+        private readonly EmpresaService $empresa,
+    ) {
     }
 
     /**
@@ -88,7 +90,7 @@ class VentaController extends Controller
 
         return Inertia::render('Ventas/Boleta', [
             'venta'   => $venta,
-            'empresa' => Empresa::first(),
+            'empresa' => $this->empresa->obtener(),
         ]);
     }
 
