@@ -12,6 +12,7 @@ use App\Services\EmpresaService;
 use App\Services\VentaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -35,14 +36,38 @@ class VentaController extends Controller
 
     /**
      * Registra la venta y redirige a la boleta generada.
+     *
+     * Idempotencia: si el cliente envía un header Idempotency-Key (UUID emitido
+     * al abrir el POS) reutilizamos la venta ya generada para esa key durante
+     * los 60 s siguientes. Esto blinda contra dobles clicks, reintentos por
+     * red inestable y reenvíos del navegador sin tocar la lógica del service.
      */
     public function store(StoreVentaRequest $request): RedirectResponse
     {
+        $userId = $request->user()->id;
+        $idempotencyKey = $this->resolverIdempotencyKey($request, $userId);
+
+        if ($idempotencyKey !== null) {
+            $ventaIdPrevia = Cache::get($idempotencyKey);
+            if ($ventaIdPrevia !== null) {
+                $venta = Venta::with('boleta')->find($ventaIdPrevia);
+                if ($venta !== null) {
+                    return redirect()
+                        ->route('ventas.boleta', $venta)
+                        ->with('success', 'Venta ya registrada. Boleta ' . $venta->boleta->numero_formateado . '.');
+                }
+            }
+        }
+
         try {
             $venta = $this->service->registrar(
                 $request->validated()['items'],
-                auth()->id()
+                $userId,
             );
+
+            if ($idempotencyKey !== null) {
+                Cache::put($idempotencyKey, $venta->id, now()->addSeconds(60));
+            }
 
             return redirect()
                 ->route('ventas.boleta', $venta)
@@ -50,6 +75,29 @@ class VentaController extends Controller
         } catch (\RuntimeException $e) {
             return back()->with('error', $e->getMessage());
         }
+    }
+
+    /**
+     * Normaliza la Idempotency-Key recibida del cliente. Devuelve la clave de
+     * cache final namespaced por usuario para evitar colisiones entre cajas.
+     */
+    private function resolverIdempotencyKey(Request $request, int $userId): ?string
+    {
+        $raw = (string) $request->header('Idempotency-Key', '');
+        $raw = trim($raw);
+
+        if ($raw === '') {
+            return null;
+        }
+
+        // Acotamos longitud y caracteres para evitar abuso del key como vector
+        // de envenenamiento del store. UUIDv4 cabe en 36 chars; aceptamos hasta
+        // 64 alfanuméricos por flexibilidad de generadores.
+        if (! preg_match('/^[A-Za-z0-9\-_]{8,64}$/', $raw)) {
+            return null;
+        }
+
+        return "venta.idempotency.{$userId}.{$raw}";
     }
 
     /**
@@ -99,8 +147,16 @@ class VentaController extends Controller
      */
     public function anular(AnularVentaRequest $request, Venta $venta): RedirectResponse
     {
+        $usuario = $request->user();
+
+        // Sin este chequeo cualquier Vendedor con permiso ventas.cancel podría
+        // anular ventas de otros vendedores con sólo conocer el ID (IDOR).
+        if (! $usuario->hasRole(Rol::ADMINISTRADOR->value) && $venta->user_id !== $usuario->id) {
+            abort(403, 'No tienes permiso para anular esta venta.');
+        }
+
         try {
-            $this->service->anular($venta, $request->motivo, auth()->id());
+            $this->service->anular($venta, $request->motivo, $usuario->id);
 
             return back()->with('success', 'Venta anulada y stock repuesto.');
         } catch (\RuntimeException $e) {

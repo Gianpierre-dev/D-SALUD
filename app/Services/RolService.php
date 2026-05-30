@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\Rol;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -61,19 +62,26 @@ class RolService
     /**
      * Actualiza el nombre y los permisos de un rol.
      *
+     * Los roles del sistema (Administrador, Vendedor) son inmutables tanto en
+     * nombre como en permisos: el código los referencia por name vía hasRole()
+     * y altera su perímetro de privilegio sería privilege escalation.
+     *
      * @param  array<string, mixed>  $datos
      */
     public function actualizar(Role $rol, array $datos): Role
     {
-        // No permitir renombrar roles del sistema: el nombre se usa en
-        // hasRole() a lo largo del código; renombrarlo rompería la autorización.
-        if (in_array($rol->name, Rol::values(), true) && $rol->name !== $datos['name']) {
+        if ($this->esRolDelSistema($rol)) {
             throw new \RuntimeException(
-                "El rol \"{$rol->name}\" es un rol del sistema y no puede renombrarse."
+                "El rol \"{$rol->name}\" es un rol del sistema y no puede modificarse."
             );
         }
 
-        return DB::transaction(function () use ($rol, $datos): Role {
+        // user_ids ANTES de la transacción para invalidar payload de cada usuario
+        // afectado: el cache user.{id}.payload trae roles+permissions resueltos y
+        // sin esta invalidación los usuarios mantendrían permisos viejos hasta el TTL.
+        $userIds = $rol->users()->pluck('id');
+
+        $rol = DB::transaction(function () use ($rol, $datos): Role {
             $rol->update(['name' => $datos['name']]);
             $rol->syncPermissions($datos['permissions'] ?? []);
 
@@ -81,6 +89,10 @@ class RolService
 
             return $rol;
         });
+
+        $this->invalidarCachePayloads($userIds->all());
+
+        return $rol;
     }
 
     /**
@@ -90,12 +102,18 @@ class RolService
      */
     public function eliminar(Role $rol): void
     {
-        if (in_array($rol->name, Rol::values(), true)) {
+        if ($this->esRolDelSistema($rol)) {
             throw new \RuntimeException("El rol \"{$rol->name}\" es un rol del sistema y no puede eliminarse.");
         }
 
-        $this->auditoria->registrar('roles', 'eliminar', "Rol #{$rol->id}: {$rol->name}");
-        $rol->delete();
+        $userIds = $rol->users()->pluck('id');
+
+        DB::transaction(function () use ($rol): void {
+            $this->auditoria->registrar('roles', 'eliminar', "Rol #{$rol->id}: {$rol->name}");
+            $rol->delete();
+        });
+
+        $this->invalidarCachePayloads($userIds->all());
     }
 
     /**
@@ -116,5 +134,22 @@ class RolService
         return $permisos
             ->groupBy(fn (Permission $p) => explode('.', $p->name)[0])
             ->toArray();
+    }
+
+    private function esRolDelSistema(Role $rol): bool
+    {
+        return in_array($rol->name, Rol::values(), true);
+    }
+
+    /**
+     * @param  array<int, int>  $userIds
+     */
+    private function invalidarCachePayloads(array $userIds): void
+    {
+        foreach ($userIds as $id) {
+            Cache::forget("user.{$id}.payload");
+            Cache::forget("user.{$id}.roles");
+            Cache::forget("user.{$id}.permissions");
+        }
     }
 }

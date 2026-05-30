@@ -97,8 +97,8 @@ class AdminModulosTest extends TestCase
         $this->post(route('usuarios.store'), [
             'name'                  => 'Usuario Auditado',
             'email'                 => 'auditado@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
+            'password'              => 'NuevaClave123!',
+            'password_confirmation' => 'NuevaClave123!',
             'rol'                   => Rol::VENDEDOR->value,
         ]);
 
