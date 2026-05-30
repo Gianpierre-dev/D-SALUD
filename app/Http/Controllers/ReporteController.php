@@ -37,22 +37,18 @@ class ReporteController extends Controller
     public function ventasPorPeriodo(Request $request): BinaryFileResponse
     {
         $validated = $request->validate([
-            'fecha_inicio' => ['required', 'date'],
-            'fecha_fin'    => ['required', 'date', 'after_or_equal:fecha_inicio'],
+            'fecha_inicio' => ['required', 'date_format:Y-m-d'],
+            'fecha_fin'    => ['required', 'date_format:Y-m-d', 'after_or_equal:fecha_inicio'],
         ]);
 
         $inicio = Carbon::parse($validated['fecha_inicio']);
         $fin    = Carbon::parse($validated['fecha_fin']);
 
-        $ventas = $this->service->ventasPorPeriodo($inicio, $fin);
+        $this->validarRangoMaximo($inicio, $fin);
 
-        $nombre = sprintf(
-            'ventas_%s_%s.xlsx',
-            $inicio->format('Ymd'),
-            $fin->format('Ymd'),
-        );
+        $nombre = sprintf('ventas_%s_%s.xlsx', $inicio->format('Ymd'), $fin->format('Ymd'));
 
-        return Excel::download(new VentasPorPeriodoExport($ventas), $nombre);
+        return Excel::download(new VentasPorPeriodoExport($inicio, $fin), $nombre);
     }
 
     /**
@@ -122,11 +118,27 @@ class ReporteController extends Controller
             ? Carbon::parse($validated['fecha_fin'])
             : null;
 
-        $registros = $this->service->auditoria($inicio, $fin);
+        if ($inicio !== null && $fin !== null) {
+            $this->validarRangoMaximo($inicio, $fin);
+        }
 
         return Excel::download(
-            new AuditoriaExport($registros),
+            new AuditoriaExport($inicio, $fin),
             'auditoria_' . now()->format('Ymd') . '.xlsx',
         );
+    }
+
+    /**
+     * Impide rangos arbitrariamente grandes (DoS por export).
+     *
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    private function validarRangoMaximo(Carbon $inicio, Carbon $fin, int $diasMaximos = 90): void
+    {
+        if ($inicio->diffInDays($fin) > $diasMaximos) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'fecha_fin' => "El rango máximo permitido es de {$diasMaximos} días.",
+            ]);
+        }
     }
 }

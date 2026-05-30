@@ -46,7 +46,15 @@ class ProductoController extends Controller
 
     public function destroy(Producto $producto): RedirectResponse
     {
-        $this->service->eliminar($producto);
+        try {
+            $this->service->eliminar($producto);
+        } catch (\Illuminate\Database\QueryException $e) {
+            // FK restrictOnDelete impide eliminar productos con lotes o ventas asociadas.
+            return back()->with(
+                'error',
+                'No se puede eliminar el producto porque tiene lotes o ventas asociadas.'
+            );
+        }
 
         return back()->with('success', 'Producto eliminado correctamente.');
     }

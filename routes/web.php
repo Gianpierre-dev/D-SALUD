@@ -152,7 +152,9 @@ Route::middleware('auth')->group(function () {
     | Reportes (exportación a Excel)
     |--------------------------------------------------------------------------
     */
-    Route::middleware('permission:reportes.read')->prefix('reportes')->name('reportes.')->group(function () {
+    // Rate limit dedicado: los exports son caros (memoria/CPU); 10 descargas
+    // por minuto y por usuario alcanza para uso operativo y previene abuso.
+    Route::middleware(['permission:reportes.read', 'throttle:10,1'])->prefix('reportes')->name('reportes.')->group(function () {
         Route::get('/', [ReporteController::class, 'index'])->name('index');
         Route::get('/ventas-por-periodo', [ReporteController::class, 'ventasPorPeriodo'])->name('ventasPorPeriodo');
         Route::get('/mas-vendidos', [ReporteController::class, 'productosMasVendidos'])->name('productosMasVendidos');
