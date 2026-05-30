@@ -58,8 +58,8 @@ class UsuarioTest extends TestCase
         $response = $this->post(route('usuarios.store'), [
             'name'                  => 'Juan Pérez',
             'email'                 => 'juan@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
+            'password'              => 'NuevaClave123!',
+            'password_confirmation' => 'NuevaClave123!',
             'rol'                   => Rol::VENDEDOR->value,
         ]);
 
@@ -89,8 +89,8 @@ class UsuarioTest extends TestCase
         $response = $this->post(route('usuarios.store'), [
             'name'                  => 'Otro Usuario',
             'email'                 => 'duplicado@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
+            'password'              => 'NuevaClave123!',
+            'password_confirmation' => 'NuevaClave123!',
             'rol'                   => Rol::VENDEDOR->value,
         ]);
 
@@ -98,10 +98,10 @@ class UsuarioTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
-    // Validaciones: password mínimo 8 caracteres
+    // Validaciones: password debe cumplir política NIST (min 10 + complejidad)
     // -------------------------------------------------------------------------
 
-    public function test_no_se_puede_crear_usuario_con_password_menor_a_8_caracteres(): void
+    public function test_no_se_puede_crear_usuario_con_password_que_no_cumple_politica_nist(): void
     {
         $this->actingAs($this->admin);
 
@@ -127,8 +127,8 @@ class UsuarioTest extends TestCase
         $response = $this->post(route('usuarios.store'), [
             'name'                  => 'Nuevo',
             'email'                 => 'nuevo@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'diferente456',
+            'password'              => 'NuevaClave123!',
+            'password_confirmation' => 'OtraClave123!',
             'rol'                   => Rol::VENDEDOR->value,
         ]);
 
@@ -146,8 +146,8 @@ class UsuarioTest extends TestCase
         $response = $this->post(route('usuarios.store'), [
             'name'                  => 'Nuevo',
             'email'                 => 'nuevo@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
+            'password'              => 'NuevaClave123!',
+            'password_confirmation' => 'NuevaClave123!',
             'rol'                   => 'rol_que_no_existe',
         ]);
 
@@ -226,8 +226,8 @@ class UsuarioTest extends TestCase
         $response = $this->post(route('usuarios.store'), [
             'name'                  => 'Intruso',
             'email'                 => 'intruso@example.com',
-            'password'              => 'password123',
-            'password_confirmation' => 'password123',
+            'password'              => 'NuevaClave123!',
+            'password_confirmation' => 'NuevaClave123!',
             'rol'                   => Rol::VENDEDOR->value,
         ]);
 

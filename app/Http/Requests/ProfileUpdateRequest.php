@@ -18,6 +18,8 @@ class ProfileUpdateRequest extends FormRequest
      */
     public function rules(): array
     {
+        $user = $this->user();
+
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => [
@@ -26,7 +28,16 @@ class ProfileUpdateRequest extends FormRequest
                 'lowercase',
                 'email',
                 'max:255',
-                Rule::unique(User::class)->ignore($this->user()->id),
+                Rule::unique(User::class)->ignore($user->id),
+            ],
+            // Si el correo está cambiando, el usuario debe re-autenticarse con
+            // su contraseña actual. Esto cierra el vector de account takeover
+            // por sesión secuestrada (atacante apunta el email a uno propio
+            // y dispara forgot-password contra la víctima).
+            'current_password' => [
+                Rule::requiredIf(fn (): bool => $this->input('email') !== $user->email),
+                'nullable',
+                'current_password',
             ],
         ];
     }

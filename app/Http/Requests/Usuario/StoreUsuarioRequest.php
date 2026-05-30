@@ -7,6 +7,7 @@ namespace App\Http\Requests\Usuario;
 use App\Enums\Rol;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
 
 class StoreUsuarioRequest extends FormRequest
@@ -24,8 +25,11 @@ class StoreUsuarioRequest extends FormRequest
     {
         return [
             'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'email'    => ['required', 'email', 'lowercase', 'max:255', 'unique:users,email'],
+            // Password::defaults() aplica la política NIST configurada globalmente
+            // (min 10 + complejidad + uncompromised). Antes el alta admin usaba
+            // min:8 sin complejidad, abriendo un vector más débil que el resto.
+            'password' => ['required', 'string', 'confirmed', Password::defaults()],
             'rol'      => ['required', 'string', Rule::in($this->rolesAsignables())],
         ];
     }

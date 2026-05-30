@@ -31,7 +31,11 @@ Route::middleware('guest')->group(function () {
     Route::get('reset-password/{token}', [NewPasswordController::class, 'create'])
         ->name('password.reset');
 
+    // throttle:6,1 cierra el vector de brute-force sobre el token de reset:
+    // el token vive 60 min y es 64-hex, pero sin tope un atacante con CPU puede
+    // intentar millones de tokens por hora.
     Route::post('reset-password', [NewPasswordController::class, 'store'])
+        ->middleware('throttle:6,1')
         ->name('password.store');
 });
 
@@ -52,7 +56,10 @@ Route::middleware('auth')->group(function () {
 
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
 
-    Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+    // Limita abuso de current_password (timing) y cambios masivos en cuentas comprometidas.
+    Route::put('password', [PasswordController::class, 'update'])
+        ->middleware('throttle:6,1')
+        ->name('password.update');
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');

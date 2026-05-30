@@ -32,6 +32,9 @@ class ProfileTest extends TestCase
             ->patch('/profile', [
                 'name' => 'Test User',
                 'email' => 'test@example.com',
+                // El cambio de email exige re-autenticación con current_password
+                // para cerrar el vector de account takeover por sesión secuestrada.
+                'current_password' => 'password',
             ]);
 
         $response
@@ -43,6 +46,23 @@ class ProfileTest extends TestCase
         $this->assertSame('Test User', $user->name);
         $this->assertSame('test@example.com', $user->email);
         $this->assertNull($user->email_verified_at);
+    }
+
+    public function test_email_change_requires_current_password(): void
+    {
+        $user = User::factory()->create();
+
+        $response = $this
+            ->actingAs($user)
+            ->from('/profile')
+            ->patch('/profile', [
+                'name' => $user->name,
+                'email' => 'nuevo@example.com',
+                // sin current_password
+            ]);
+
+        $response->assertSessionHasErrors('current_password');
+        $this->assertNotSame('nuevo@example.com', $user->fresh()->email);
     }
 
     public function test_email_verification_status_is_unchanged_when_the_email_address_is_unchanged(): void

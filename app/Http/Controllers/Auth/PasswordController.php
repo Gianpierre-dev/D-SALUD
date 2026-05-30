@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rules\Password;
 
@@ -25,6 +26,10 @@ class PasswordController extends Controller
         $request->user()->update([
             'password' => Hash::make($validated['password']),
         ]);
+
+        // Invalida sesiones activas en otros dispositivos: si la cuenta había sido
+        // comprometida, el cambio de contraseña debe cortar el acceso del atacante.
+        Auth::logoutOtherDevices($validated['password']);
 
         return back();
     }

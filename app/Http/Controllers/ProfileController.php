@@ -7,10 +7,12 @@ namespace App\Http\Controllers;
 use App\Enums\Rol;
 use App\Http\Requests\ProfileUpdateRequest;
 use App\Models\User;
+use App\Notifications\EmailChangedNotification;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
@@ -34,13 +36,23 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $emailAnterior = $user->email;
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $user->fill($request->only('name', 'email'));
+
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
         }
 
-        $request->user()->save();
+        $user->save();
+
+        // Si el correo cambió, notificar al correo anterior para que el titular
+        // detecte cualquier intento de takeover y pueda accionar a tiempo.
+        if ($emailAnterior !== $user->email) {
+            Notification::route('mail', $emailAnterior)
+                ->notify(new EmailChangedNotification($emailAnterior, $user->email));
+        }
 
         return Redirect::route('profile.edit');
     }

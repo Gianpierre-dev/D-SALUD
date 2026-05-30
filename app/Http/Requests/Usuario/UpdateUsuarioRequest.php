@@ -7,6 +7,7 @@ namespace App\Http\Requests\Usuario;
 use App\Enums\Rol;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules\Password;
 use Spatie\Permission\Models\Role;
 
 class UpdateUsuarioRequest extends FormRequest
@@ -25,8 +26,9 @@ class UpdateUsuarioRequest extends FormRequest
 
         return [
             'name'     => ['required', 'string', 'max:255'],
-            'email'    => ['required', 'email', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
-            'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+            'email'    => ['required', 'email', 'lowercase', 'max:255', Rule::unique('users', 'email')->ignore($userId)],
+            // Misma política NIST que el alta. Solo se valida si se envía un valor.
+            'password' => ['nullable', 'string', 'confirmed', Password::defaults()],
             'rol'      => ['required', 'string', Rule::in($this->rolesAsignables())],
         ];
     }

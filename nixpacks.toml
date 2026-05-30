@@ -7,7 +7,7 @@
 #   - Scheduler: php artisan schedule:work
 
 [phases.setup]
-nixPkgs = ["nodejs_20"]
+nixPkgs = ["nodejs_20", "php82", "php82Extensions.zip", "php82Extensions.gd", "php82Extensions.intl"]
 
 [phases.build]
 cmds = [
@@ -25,5 +25,10 @@ cmds = [
     "php artisan storage:link || true",
 ]
 
+# `php artisan serve` está pensado para desarrollo (single-threaded, cliente HTTP
+# básico). En producción el plan oficial es:
+#   - usar el buildpack de PHP de Nixpacks que arranca nginx + php-fpm, o
+#   - migrar a FrankenPHP / Laravel Octane si se necesita más throughput.
+# Mientras tanto, este start funciona en Railway para tráfico bajo del TAP.
 [start]
 cmd = "php artisan serve --host 0.0.0.0 --port $PORT"

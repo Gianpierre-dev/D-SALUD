@@ -8,6 +8,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
@@ -52,6 +53,11 @@ class NewPasswordController extends Controller
                     'password' => Hash::make($request->password),
                     'remember_token' => Str::random(60),
                 ])->save();
+
+                // Si un atacante secuestró una cookie, el reset no debe dejarle
+                // sesión activa. Esto rota el password_hash en la sesión y
+                // las demás dejan de validar en AuthenticatesSessions.
+                Auth::logoutOtherDevices($request->password);
 
                 event(new PasswordReset($user));
             }
