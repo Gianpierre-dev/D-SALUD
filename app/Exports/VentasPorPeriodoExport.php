@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
+use App\Support\CsvSafe;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -40,9 +41,9 @@ class VentasPorPeriodoExport implements FromCollection, WithHeadings, WithMappin
     public function map($venta): array
     {
         return [
-            $venta->boleta?->numero_formateado ?? '—',
+            CsvSafe::escape($venta->boleta?->numero_formateado ?? '—'),
             $venta->created_at->format('d/m/Y H:i'),
-            $venta->vendedor?->name ?? '—',
+            CsvSafe::escape($venta->vendedor?->name ?? '—'),
             number_format((float) $venta->total, 2),
         ];
     }

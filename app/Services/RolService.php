@@ -62,6 +62,14 @@ class RolService
      */
     public function actualizar(Role $rol, array $datos): Role
     {
+        // No permitir renombrar roles del sistema: el nombre se usa en
+        // hasRole() a lo largo del código; renombrarlo rompería la autorización.
+        if (in_array($rol->name, Rol::values(), true) && $rol->name !== $datos['name']) {
+            throw new \RuntimeException(
+                "El rol \"{$rol->name}\" es un rol del sistema y no puede renombrarse."
+            );
+        }
+
         $rol->update(['name' => $datos['name']]);
         $rol->syncPermissions($datos['permissions'] ?? []);
 

@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use App\Enums\Rol;
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Models\User;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -52,6 +55,15 @@ class ProfileController extends Controller
         ]);
 
         $user = $request->user();
+
+        // Bloquear que el único Administrador del sistema elimine su cuenta:
+        // dejaría el sistema sin acceso administrativo, sin forma de recuperarlo.
+        if ($user->hasRole(Rol::ADMINISTRADOR->value)
+            && User::role(Rol::ADMINISTRADOR->value)->count() <= 1) {
+            throw ValidationException::withMessages([
+                'password' => 'No puedes eliminar la única cuenta de Administrador del sistema.',
+            ]);
+        }
 
         Auth::logout();
 

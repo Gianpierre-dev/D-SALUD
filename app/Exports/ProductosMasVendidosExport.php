@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
+use App\Support\CsvSafe;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -39,7 +40,7 @@ class ProductosMasVendidosExport implements FromCollection, WithHeadings, WithMa
     public function map($fila): array
     {
         return [
-            $fila->nombre_producto,
+            CsvSafe::escape((string) $fila->nombre_producto),
             $fila->cantidad_total,
             number_format((float) $fila->total_vendido, 2),
         ];

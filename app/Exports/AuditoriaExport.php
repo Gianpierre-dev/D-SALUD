@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
+use App\Support\CsvSafe;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -43,11 +44,11 @@ class AuditoriaExport implements FromCollection, WithHeadings, WithMapping
     {
         return [
             $registro->created_at->format('d/m/Y H:i:s'),
-            $registro->user?->name ?? '—',
-            $registro->modulo,
-            $registro->accion,
-            $registro->ip ?? '—',
-            $registro->detalle ?? '—',
+            CsvSafe::escape($registro->user?->name ?? '—'),
+            CsvSafe::escape($registro->modulo),
+            CsvSafe::escape($registro->accion),
+            CsvSafe::escape($registro->ip ?? '—'),
+            CsvSafe::escape($registro->detalle ?? '—'),
         ];
     }
 }

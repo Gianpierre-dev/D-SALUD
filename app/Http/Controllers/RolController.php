@@ -39,7 +39,11 @@ class RolController extends Controller
 
     public function update(UpdateRolRequest $request, Role $role): RedirectResponse
     {
-        $this->service->actualizar($role, $request->validated());
+        try {
+            $this->service->actualizar($role, $request->validated());
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return back()->with('success', 'Rol actualizado correctamente.');
     }

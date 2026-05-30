@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
+use App\Support\CsvSafe;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -39,7 +40,7 @@ class LotesStockBajoExport implements FromCollection, WithHeadings, WithMapping
     public function map($producto): array
     {
         return [
-            $producto->nombre,
+            CsvSafe::escape((string) $producto->nombre),
             (int) $producto->lotes_sum_stock,
             $producto->stock_minimo,
         ];

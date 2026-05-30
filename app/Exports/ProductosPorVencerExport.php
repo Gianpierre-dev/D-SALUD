@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
+use App\Support\CsvSafe;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
 use Maatwebsite\Excel\Concerns\WithHeadings;
@@ -43,8 +44,8 @@ class ProductosPorVencerExport implements FromCollection, WithHeadings, WithMapp
         $diasRestantes = (int) now()->startOfDay()->diffInDays($lote->fecha_vencimiento, false);
 
         return [
-            $lote->producto?->nombre ?? '—',
-            $lote->codigo_lote,
+            CsvSafe::escape($lote->producto?->nombre ?? '—'),
+            CsvSafe::escape((string) $lote->codigo_lote),
             $lote->fecha_vencimiento->format('d/m/Y'),
             $lote->stock,
             $diasRestantes,

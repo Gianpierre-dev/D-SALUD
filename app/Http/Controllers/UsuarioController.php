@@ -39,14 +39,22 @@ class UsuarioController extends Controller
 
     public function update(UpdateUsuarioRequest $request, User $user): RedirectResponse
     {
-        $this->service->actualizar($user, $request->validated());
+        try {
+            $this->service->actualizar($user, $request->validated(), $request->user());
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return back()->with('success', 'Usuario actualizado correctamente.');
     }
 
-    public function destroy(User $user): RedirectResponse
+    public function destroy(Request $request, User $user): RedirectResponse
     {
-        $this->service->eliminar($user);
+        try {
+            $this->service->eliminar($user, $request->user());
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
 
         return back()->with('success', 'Usuario eliminado correctamente.');
     }
