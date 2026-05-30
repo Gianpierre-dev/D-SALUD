@@ -112,9 +112,28 @@ class VentaService
             $venta->total = $totalVenta;
             $venta->save();
 
-            // 6. Generar boleta correlativa con bloqueo para evitar duplicados.
-            $serie  = config('dsalud.boleta.serie');
-            $numero = (Boleta::where('serie', $serie)->lockForUpdate()->max('numero') ?? 0) + 1;
+            // 6. Generar boleta correlativa.
+            //    Se usa la tabla `secuencias_boleta` con lockForUpdate sobre la fila
+            //    de la serie: dos cajas concurrentes serializan acceso a esa fila y
+            //    nunca obtienen el mismo número (a diferencia de MAX(numero)+1, que
+             //   sufre race condition bajo READ COMMITTED).
+            $serie = config('dsalud.boleta.serie');
+
+            DB::table('secuencias_boleta')->updateOrInsert(
+                ['serie' => $serie],
+                ['updated_at' => now()],
+            );
+
+            $ultimo = (int) DB::table('secuencias_boleta')
+                ->where('serie', $serie)
+                ->lockForUpdate()
+                ->value('ultimo_numero');
+
+            $numero = $ultimo + 1;
+
+            DB::table('secuencias_boleta')
+                ->where('serie', $serie)
+                ->update(['ultimo_numero' => $numero, 'updated_at' => now()]);
 
             $boleta = Boleta::create([
                 'venta_id'      => $venta->id,
