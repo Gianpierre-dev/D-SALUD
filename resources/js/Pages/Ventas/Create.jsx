@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
 import { IconShoppingCart, IconSearch } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
@@ -12,11 +12,25 @@ import { formatearMoneda } from '@/utils/format';
  * Layout:
  *   - Mobile: buscador + grilla de productos, carrito colapsado abajo.
  *   - Desktop (lg): 2 columnas — productos (izq, 2/3) + carrito (der, 1/3).
+ *
+ * Idempotencia: cada vez que el carrito se inicializa (o tras un éxito) se
+ * genera un UUID que viaja como header Idempotency-Key. El backend devuelve
+ * la misma boleta si el cliente reintenta el POST con la misma key dentro
+ * de 60 s — bloquea dobles ventas por doble click o reintento de red.
  */
+function generarIdempotencyKey() {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return crypto.randomUUID();
+    }
+    // Fallback simple para navegadores sin crypto.randomUUID.
+    return 'k-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
+}
+
 export default function Create({ productos }) {
     const [busqueda, setBusqueda] = useState('');
     const [carrito, setCarrito] = useState([]);
     const [procesando, setProcesando] = useState(false);
+    const idempotencyKeyRef = useRef(generarIdempotencyKey());
 
     // ---------- Helpers ----------
 
@@ -101,7 +115,18 @@ export default function Create({ productos }) {
             route('ventas.store'),
             { items: carrito.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })) },
             {
-                onSuccess: () => setCarrito([]),
+                headers: { 'Idempotency-Key': idempotencyKeyRef.current },
+                onSuccess: () => {
+                    setCarrito([]);
+                    // Tras un éxito real, rotamos la key para la próxima venta.
+                    idempotencyKeyRef.current = generarIdempotencyKey();
+                },
+                onError: () => {
+                    // Refresca stock_total tras un error de negocio (stock
+                    // insuficiente, producto inactivo, etc.) para no insistir
+                    // sobre datos viejos del carrito.
+                    router.reload({ only: ['productos'] });
+                },
                 onFinish: () => setProcesando(false),
             }
         );
