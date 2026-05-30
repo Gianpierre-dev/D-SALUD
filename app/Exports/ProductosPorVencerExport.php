@@ -4,21 +4,38 @@ declare(strict_types=1);
 
 namespace App\Exports;
 
+use App\Models\Lote;
 use App\Support\CsvSafe;
-use Illuminate\Support\Collection;
-use Maatwebsite\Excel\Concerns\FromCollection;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Carbon;
+use Maatwebsite\Excel\Concerns\FromQuery;
+use Maatwebsite\Excel\Concerns\WithChunkReading;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMapping;
 
-class ProductosPorVencerExport implements FromCollection, WithHeadings, WithMapping
+/**
+ * Export de lotes próximos a vencer con FromQuery + WithChunkReading: itera la
+ * tabla `lotes` en bloques de 1000 y mantiene memoria constante incluso con
+ * inventarios de cientos de miles de lotes.
+ */
+class ProductosPorVencerExport implements FromQuery, WithChunkReading, WithHeadings, WithMapping
 {
-    public function __construct(private readonly Collection $lotes)
+    public function __construct(private readonly Carbon $limite)
     {
     }
 
-    public function collection(): Collection
+    public function query(): Builder
     {
-        return $this->lotes;
+        return Lote::query()
+            ->with('producto:id,nombre')
+            ->where('stock', '>', 0)
+            ->where('fecha_vencimiento', '<=', $this->limite)
+            ->orderBy('fecha_vencimiento');
+    }
+
+    public function chunkSize(): int
+    {
+        return 1000;
     }
 
     /**
@@ -36,7 +53,7 @@ class ProductosPorVencerExport implements FromCollection, WithHeadings, WithMapp
     }
 
     /**
-     * @param  mixed  $lote
+     * @param  Lote  $lote
      * @return array<int, mixed>
      */
     public function map($lote): array
@@ -47,7 +64,7 @@ class ProductosPorVencerExport implements FromCollection, WithHeadings, WithMapp
             CsvSafe::escape($lote->producto?->nombre ?? '—'),
             CsvSafe::escape((string) $lote->codigo_lote),
             $lote->fecha_vencimiento->format('d/m/Y'),
-            $lote->stock,
+            (int) $lote->stock,
             $diasRestantes,
         ];
     }

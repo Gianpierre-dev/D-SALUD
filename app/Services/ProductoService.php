@@ -8,6 +8,7 @@ use App\Models\Categoria;
 use App\Models\Producto;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Lógica de negocio del catálogo de productos.
@@ -75,7 +76,13 @@ class ProductoService
 
     public function eliminar(Producto $producto): void
     {
-        $this->auditoria->registrar('productos', 'eliminar', "Producto #{$producto->id}: {$producto->nombre}");
-        $producto->delete();
+        // El delete puede fallar por restrictOnDelete (lotes/ventas asociadas).
+        // La auditoría debe registrarse DESPUÉS del delete y dentro de la misma
+        // transacción para evitar logs que mienten cuando la FK rechaza la baja.
+        DB::transaction(function () use ($producto): void {
+            $descripcion = "Producto #{$producto->id}: {$producto->nombre}";
+            $producto->delete();
+            $this->auditoria->registrar('productos', 'eliminar', $descripcion);
+        });
     }
 }

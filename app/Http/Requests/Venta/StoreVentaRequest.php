@@ -19,8 +19,11 @@ class StoreVentaRequest extends FormRequest
      */
     public function rules(): array
     {
+        // El tope de items por venta blinda contra amplifier DoS: cada item dispara
+        // un Producto::find + un lockForUpdate sobre los lotes; sin tope una sola
+        // request podía bloquear la tabla `lotes` durante minutos.
         return [
-            'items'                  => ['required', 'array', 'min:1'],
+            'items'                  => ['required', 'array', 'min:1', 'max:50'],
             'items.*.producto_id'    => ['required', 'integer', 'distinct', 'exists:productos,id'],
             'items.*.cantidad'       => ['required', 'integer', 'min:1', 'max:10000'],
         ];

@@ -9,7 +9,6 @@ use App\Exports\LotesStockBajoExport;
 use App\Exports\ProductosMasVendidosExport;
 use App\Exports\ProductosPorVencerExport;
 use App\Exports\VentasPorPeriodoExport;
-use App\Services\ReporteService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
 use Inertia\Inertia;
@@ -19,10 +18,6 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 
 class ReporteController extends Controller
 {
-    public function __construct(private readonly ReporteService $service)
-    {
-    }
-
     /**
      * Página principal del módulo de reportes.
      */
@@ -57,13 +52,14 @@ class ReporteController extends Controller
     public function productosMasVendidos(Request $request): BinaryFileResponse
     {
         $validated = $request->validate([
-            'fecha_inicio' => ['required', 'date'],
-            'fecha_fin'    => ['required', 'date', 'after_or_equal:fecha_inicio'],
+            'fecha_inicio' => ['required', 'date_format:Y-m-d'],
+            'fecha_fin'    => ['required', 'date_format:Y-m-d', 'after_or_equal:fecha_inicio'],
         ]);
 
-        $inicio   = Carbon::parse($validated['fecha_inicio']);
-        $fin      = Carbon::parse($validated['fecha_fin']);
-        $productos = $this->service->productosMasVendidos($inicio, $fin);
+        $inicio = Carbon::parse($validated['fecha_inicio']);
+        $fin    = Carbon::parse($validated['fecha_fin']);
+
+        $this->validarRangoMaximo($inicio, $fin);
 
         $nombre = sprintf(
             'productos_mas_vendidos_%s_%s.xlsx',
@@ -71,7 +67,7 @@ class ReporteController extends Controller
             $fin->format('Ymd'),
         );
 
-        return Excel::download(new ProductosMasVendidosExport($productos), $nombre);
+        return Excel::download(new ProductosMasVendidosExport($inicio, $fin), $nombre);
     }
 
     /**
@@ -79,10 +75,11 @@ class ReporteController extends Controller
      */
     public function productosPorVencer(): BinaryFileResponse
     {
-        $lotes = $this->service->productosPorVencer();
+        $diasAlerta = (int) config('dsalud.inventario.dias_alerta_vencimiento', 30);
+        $limite     = now()->addDays($diasAlerta)->endOfDay();
 
         return Excel::download(
-            new ProductosPorVencerExport($lotes),
+            new ProductosPorVencerExport($limite),
             'productos_por_vencer_' . now()->format('Ymd') . '.xlsx',
         );
     }
@@ -92,22 +89,24 @@ class ReporteController extends Controller
      */
     public function lotesStockBajo(): BinaryFileResponse
     {
-        $productos = $this->service->lotesStockBajo();
-
         return Excel::download(
-            new LotesStockBajoExport($productos),
+            new LotesStockBajoExport(),
             'stock_bajo_' . now()->format('Ymd') . '.xlsx',
         );
     }
 
     /**
      * Descarga: registros de auditoría, opcionalmente filtrados por fechas.
+     *
+     * Si llega un solo extremo, se completa con el otro para evitar que el
+     * export itere años enteros y agote memoria. El throttle:10,1 de la ruta
+     * es complementario, no suficiente: una sola request masiva ya tira el worker.
      */
     public function auditoria(Request $request): BinaryFileResponse
     {
         $validated = $request->validate([
-            'fecha_inicio' => ['nullable', 'date'],
-            'fecha_fin'    => ['nullable', 'date', 'after_or_equal:fecha_inicio'],
+            'fecha_inicio' => ['nullable', 'date_format:Y-m-d'],
+            'fecha_fin'    => ['nullable', 'date_format:Y-m-d', 'after_or_equal:fecha_inicio'],
         ]);
 
         $inicio = isset($validated['fecha_inicio'])
@@ -117,6 +116,13 @@ class ReporteController extends Controller
         $fin = isset($validated['fecha_fin'])
             ? Carbon::parse($validated['fecha_fin'])
             : null;
+
+        if ($inicio !== null && $fin === null) {
+            $fin = now();
+        }
+        if ($fin !== null && $inicio === null) {
+            $inicio = $fin->copy()->subDays(90);
+        }
 
         if ($inicio !== null && $fin !== null) {
             $this->validarRangoMaximo($inicio, $fin);
@@ -135,7 +141,7 @@ class ReporteController extends Controller
      */
     private function validarRangoMaximo(Carbon $inicio, Carbon $fin, int $diasMaximos = 90): void
     {
-        if ($inicio->diffInDays($fin) > $diasMaximos) {
+        if (abs((int) $inicio->diffInDays($fin)) > $diasMaximos) {
             throw \Illuminate\Validation\ValidationException::withMessages([
                 'fecha_fin' => "El rango máximo permitido es de {$diasMaximos} días.",
             ]);
