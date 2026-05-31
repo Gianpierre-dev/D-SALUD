@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Http\Controllers\AuditoriaController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
+use App\Http\Controllers\CompraController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmpresaController;
 use App\Http\Controllers\LoteController;
@@ -110,6 +111,28 @@ Route::middleware('auth')->group(function () {
         ->name('inventario.movimientos.index')->middleware('permission:inventario.read');
     Route::post('inventario/movimientos', [MovimientoInventarioController::class, 'store'])
         ->name('inventario.movimientos.store')->middleware('permission:inventario.create');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Compras (órdenes a proveedor + recepción)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('compras', [CompraController::class, 'index'])
+        ->name('compras.index')->middleware('permission:compras.read');
+    Route::get('compras/nueva', [CompraController::class, 'create'])
+        ->name('compras.create')->middleware('permission:compras.create');
+    Route::post('compras', [CompraController::class, 'store'])
+        ->name('compras.store')->middleware('permission:compras.create');
+    Route::get('compras/{compra}', [CompraController::class, 'show'])
+        ->name('compras.show')->middleware('permission:compras.read');
+    Route::get('compras/{compra}/edit', [CompraController::class, 'edit'])
+        ->name('compras.edit')->middleware('permission:compras.update');
+    Route::put('compras/{compra}', [CompraController::class, 'update'])
+        ->name('compras.update')->middleware('permission:compras.update');
+    Route::put('compras/{compra}/recibir', [CompraController::class, 'recibir'])
+        ->name('compras.recibir')->middleware('permission:compras.recibir');
+    Route::delete('compras/{compra}', [CompraController::class, 'destroy'])
+        ->name('compras.destroy')->middleware('permission:compras.delete');
 
     /*
     |--------------------------------------------------------------------------
