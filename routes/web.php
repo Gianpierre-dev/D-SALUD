@@ -8,6 +8,7 @@ use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmpresaController;
 use App\Http\Controllers\LoteController;
+use App\Http\Controllers\MovimientoInventarioController;
 use App\Http\Controllers\ProductoController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\ProveedorController;
@@ -102,6 +103,16 @@ Route::middleware('auth')->group(function () {
 
     /*
     |--------------------------------------------------------------------------
+    | Movimientos de inventario (kardex)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('inventario/movimientos', [MovimientoInventarioController::class, 'index'])
+        ->name('inventario.movimientos.index')->middleware('permission:inventario.read');
+    Route::post('inventario/movimientos', [MovimientoInventarioController::class, 'store'])
+        ->name('inventario.movimientos.store')->middleware('permission:inventario.create');
+
+    /*
+    |--------------------------------------------------------------------------
     | Usuarios
     |--------------------------------------------------------------------------
     */
@@ -177,6 +188,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/mas-vendidos', [ReporteController::class, 'productosMasVendidos'])->name('productosMasVendidos');
         Route::get('/por-vencer', [ReporteController::class, 'productosPorVencer'])->name('productosPorVencer');
         Route::get('/stock-bajo', [ReporteController::class, 'lotesStockBajo'])->name('lotesStockBajo');
+        Route::get('/kardex', [ReporteController::class, 'kardex'])->name('kardex');
         Route::get('/auditoria', [ReporteController::class, 'auditoria'])->name('auditoria');
     });
 });

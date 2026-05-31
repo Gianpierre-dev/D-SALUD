@@ -4,6 +4,7 @@ import { IconDownload } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
+import SelectInput from '@/Components/SelectInput';
 import PrimaryButton from '@/Components/PrimaryButton';
 import ReporteCard from './Partials/ReporteCard';
 
@@ -145,6 +146,83 @@ function FormRangoFechasOpcional({ nombreRuta }) {
     );
 }
 
+function FormKardex({ productos }) {
+    const [productoId, setProductoId] = useState('');
+    const [desde, setDesde] = useState(primerDiaMes());
+    const [hasta, setHasta] = useState(hoy());
+    const [error, setError] = useState('');
+
+    const handleDescargar = () => {
+        if (!productoId) {
+            setError('Selecciona un producto.');
+            return;
+        }
+        if (!desde || !hasta) {
+            setError('Selecciona ambas fechas.');
+            return;
+        }
+        if (hasta < desde) {
+            setError('La fecha "Hasta" debe ser igual o posterior a "Desde".');
+            return;
+        }
+        setError('');
+        descargar('reportes.kardex', {
+            producto_id: productoId,
+            fecha_inicio: desde,
+            fecha_fin: hasta,
+        });
+    };
+
+    return (
+        <div className="space-y-3">
+            <div>
+                <InputLabel value="Producto" className="mb-1 text-xs" />
+                <SelectInput
+                    value={productoId}
+                    onChange={(e) => setProductoId(e.target.value)}
+                    className="w-full text-sm"
+                >
+                    <option value="">— Seleccione un producto —</option>
+                    {productos.map((p) => (
+                        <option key={p.id} value={p.id}>
+                            {p.codigo} — {p.nombre}
+                        </option>
+                    ))}
+                </SelectInput>
+            </div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <div>
+                    <InputLabel value="Desde" className="mb-1 text-xs" />
+                    <TextInput
+                        type="date"
+                        value={desde}
+                        onChange={(e) => setDesde(e.target.value)}
+                        className="w-full text-sm"
+                    />
+                </div>
+                <div>
+                    <InputLabel value="Hasta" className="mb-1 text-xs" />
+                    <TextInput
+                        type="date"
+                        value={hasta}
+                        onChange={(e) => setHasta(e.target.value)}
+                        className="w-full text-sm"
+                    />
+                </div>
+            </div>
+            {error && <p className="text-xs text-red-600 dark:text-red-400">{error}</p>}
+            <PrimaryButton
+                type="button"
+                onClick={handleDescargar}
+                className="w-full justify-center"
+            >
+                <IconDownload className="me-1.5 h-4 w-4" />
+                Descargar Excel
+            </PrimaryButton>
+        </div>
+    );
+}
+
 function BotonDescargaDirecta({ nombreRuta, label = 'Descargar Excel' }) {
     return (
         <PrimaryButton
@@ -160,7 +238,7 @@ function BotonDescargaDirecta({ nombreRuta, label = 'Descargar Excel' }) {
 
 // ─── Página principal ─────────────────────────────────────────────────────────
 
-export default function Index() {
+export default function Index({ productos = [] }) {
     return (
         <AuthenticatedLayout
             header={
@@ -208,6 +286,14 @@ export default function Index() {
                         descripcion="Productos activos cuyo stock total es igual o menor al mínimo configurado."
                     >
                         <BotonDescargaDirecta nombreRuta="reportes.lotesStockBajo" />
+                    </ReporteCard>
+
+                    {/* Kardex por producto */}
+                    <ReporteCard
+                        titulo="Kardex por producto"
+                        descripcion="Histórico de entradas y salidas de un producto en el rango indicado, con stock anterior y posterior por movimiento."
+                    >
+                        <FormKardex productos={productos} />
                     </ReporteCard>
 
                     {/* Auditoría */}

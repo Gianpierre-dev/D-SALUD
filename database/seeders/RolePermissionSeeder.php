@@ -35,6 +35,8 @@ class RolePermissionSeeder extends Seeder
         'proveedores.read', 'proveedores.create', 'proveedores.update', 'proveedores.delete',
         // Clientes
         'clientes.read', 'clientes.create', 'clientes.update', 'clientes.delete',
+        // Inventario (kardex de movimientos manuales)
+        'inventario.read', 'inventario.create',
         // Ventas
         'ventas.read', 'ventas.create', 'ventas.cancel',
         // Reportes

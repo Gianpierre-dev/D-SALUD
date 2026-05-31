@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\MotivoMovimiento;
 use App\Models\Boleta;
 use App\Models\DetalleVenta;
 use App\Models\Lote;
@@ -26,8 +27,10 @@ use Illuminate\Support\Facades\Log;
  */
 class VentaService
 {
-    public function __construct(private readonly AuditoriaService $auditoria)
-    {
+    public function __construct(
+        private readonly AuditoriaService $auditoria,
+        private readonly MovimientoInventarioService $movimientos,
+    ) {
     }
 
     /**
@@ -106,8 +109,18 @@ class VentaService
 
             $tomado = min($cantidadPendiente, $lote->stock);
 
-            $lote->stock -= $tomado;
-            $lote->save();
+            // Toda mutación de stock pasa por el kardex: además de descontar,
+            // genera la fila de SALIDA con motivo=VENTA y referencia=venta.id.
+            // Si llegara a quedar negativo (imposible bajo lockForUpdate), el
+            // service lanza excepción y la transacción externa hace rollback.
+            $this->movimientos->registrarSalida(
+                $lote,
+                MotivoMovimiento::VENTA,
+                $tomado,
+                null,
+                ['tipo' => 'venta', 'id' => $venta->id],
+                $userId,
+            );
 
             $aporte = $tomado * (float) $producto->precio_venta;
 
@@ -206,10 +219,20 @@ class VentaService
                 throw new \RuntimeException('La venta ya está anulada.');
             }
 
-            // Reponer stock en cada lote afectado.
+            // Reponer stock en cada lote afectado a través del kardex:
+            // cada reposición queda como ENTRADA con motivo=ANULACION_VENTA
+            // y referencia a la venta original. Esto deja trazabilidad
+            // bidireccional (la venta y su reverso son visibles en el kardex).
             foreach ($venta->detalles as $detalle) {
-                Lote::where('id', $detalle->lote_id)
-                    ->increment('stock', $detalle->cantidad);
+                $lote = Lote::findOrFail($detalle->lote_id);
+                $this->movimientos->registrarEntrada(
+                    $lote,
+                    MotivoMovimiento::ANULACION_VENTA,
+                    (int) $detalle->cantidad,
+                    "Reposición por anulación de venta #{$venta->id}",
+                    ['tipo' => 'venta', 'id' => $venta->id],
+                    $userId,
+                );
             }
 
             $venta->update([

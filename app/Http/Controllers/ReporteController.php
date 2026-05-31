@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Exports\AuditoriaExport;
+use App\Exports\KardexExport;
 use App\Exports\LotesStockBajoExport;
 use App\Exports\ProductosMasVendidosExport;
 use App\Exports\ProductosPorVencerExport;
@@ -23,7 +24,16 @@ class ReporteController extends Controller
      */
     public function index(): Response
     {
-        return Inertia::render('Reportes/Index');
+        // Productos activos solo se necesitan para el selector del Kardex.
+        // payload mínimo (id+codigo+nombre) — sin stock, sin categoría.
+        $productos = \App\Models\Producto::query()
+            ->where('activo', true)
+            ->orderBy('nombre')
+            ->get(['id', 'codigo', 'nombre']);
+
+        return Inertia::render('Reportes/Index', [
+            'productos' => $productos,
+        ]);
     }
 
     /**
@@ -92,6 +102,35 @@ class ReporteController extends Controller
         return Excel::download(
             new LotesStockBajoExport(),
             'stock_bajo_' . now()->format('Ymd') . '.xlsx',
+        );
+    }
+
+    /**
+     * Descarga: Kardex por producto en un rango de fechas.
+     */
+    public function kardex(Request $request): BinaryFileResponse
+    {
+        $validated = $request->validate([
+            'producto_id'  => ['required', 'integer', 'exists:productos,id'],
+            'fecha_inicio' => ['required', 'date_format:Y-m-d'],
+            'fecha_fin'    => ['required', 'date_format:Y-m-d', 'after_or_equal:fecha_inicio'],
+        ]);
+
+        $inicio = Carbon::parse($validated['fecha_inicio']);
+        $fin    = Carbon::parse($validated['fecha_fin']);
+
+        $this->validarRangoMaximo($inicio, $fin);
+
+        $nombre = sprintf(
+            'kardex_producto_%d_%s_%s.xlsx',
+            $validated['producto_id'],
+            $inicio->format('Ymd'),
+            $fin->format('Ymd'),
+        );
+
+        return Excel::download(
+            new KardexExport((int) $validated['producto_id'], $inicio, $fin),
+            $nombre,
         );
     }
 
