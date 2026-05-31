@@ -100,6 +100,57 @@ class VentaAccesoTest extends TestCase
     }
 
     // -------------------------------------------------------------------------
+    // Descarga del PDF (DomPDF)
+    // -------------------------------------------------------------------------
+
+    public function test_admin_puede_descargar_pdf_de_cualquier_boleta(): void
+    {
+        $vendedor = User::factory()->create();
+        $vendedor->assignRole('Vendedor');
+
+        $venta = $this->crearVentaParaUsuario($vendedor);
+
+        $admin = User::factory()->create();
+        $admin->assignRole('Administrador');
+
+        $this->actingAs($admin);
+        $response = $this->get(route('ventas.boleta.pdf', $venta));
+
+        $response->assertStatus(200);
+        $this->assertSame('application/pdf', $response->headers->get('Content-Type'));
+    }
+
+    public function test_vendedor_no_puede_descargar_pdf_de_venta_ajena(): void
+    {
+        $vendedor1 = User::factory()->create();
+        $vendedor1->assignRole('Vendedor');
+
+        $vendedor2 = User::factory()->create();
+        $vendedor2->assignRole('Vendedor');
+
+        $venta = $this->crearVentaParaUsuario($vendedor1);
+
+        $this->actingAs($vendedor2);
+        $response = $this->get(route('ventas.boleta.pdf', $venta));
+
+        $response->assertStatus(403);
+    }
+
+    public function test_vendedor_puede_descargar_pdf_de_su_propia_venta(): void
+    {
+        $vendedor = User::factory()->create();
+        $vendedor->assignRole('Vendedor');
+
+        $venta = $this->crearVentaParaUsuario($vendedor);
+
+        $this->actingAs($vendedor);
+        $response = $this->get(route('ventas.boleta.pdf', $venta));
+
+        $response->assertStatus(200);
+        $this->assertSame('application/pdf', $response->headers->get('Content-Type'));
+    }
+
+    // -------------------------------------------------------------------------
     // Registro público deshabilitado
     // -------------------------------------------------------------------------
 

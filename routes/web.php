@@ -144,6 +144,8 @@ Route::middleware('auth')->group(function () {
         ->name('ventas.index')->middleware('permission:ventas.read');
     Route::get('ventas/{venta}/boleta', [VentaController::class, 'boleta'])
         ->name('ventas.boleta')->middleware('permission:ventas.read');
+    Route::get('ventas/{venta}/boleta.pdf', [VentaController::class, 'boletaPdf'])
+        ->name('ventas.boleta.pdf')->middleware('permission:ventas.read');
     Route::put('ventas/{venta}/anular', [VentaController::class, 'anular'])
         ->name('ventas.anular')->middleware('permission:ventas.cancel');
 

@@ -10,11 +10,13 @@ use App\Http\Requests\Venta\StoreVentaRequest;
 use App\Models\Venta;
 use App\Services\EmpresaService;
 use App\Services\VentaService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Inertia\Inertia;
 use Inertia\Response;
+use Symfony\Component\HttpFoundation\Response as HttpResponse;
 
 class VentaController extends Controller
 {
@@ -140,6 +142,44 @@ class VentaController extends Controller
             'venta'   => $venta,
             'empresa' => $this->empresa->obtener(),
         ]);
+    }
+
+    /**
+     * Descarga la boleta en formato PDF generado server-side con DomPDF.
+     *
+     * Replica el guard de ownership de boleta(): un Vendedor solo puede
+     * descargar el PDF de sus propias ventas. El PDF se arma a partir
+     * del Blade resources/views/pdfs/boleta.blade.php; el logo se embebe
+     * leyendo el archivo desde public/logo.png para que el PDF resultante
+     * no dependa de la URL pública.
+     */
+    public function boletaPdf(Request $request, Venta $venta): HttpResponse
+    {
+        $usuario = $request->user();
+
+        if (! $usuario->hasRole(Rol::ADMINISTRADOR->value) && $venta->user_id !== $usuario->id) {
+            abort(403, 'No tienes permiso para descargar esta boleta.');
+        }
+
+        $venta->load('detalles.producto', 'boleta', 'vendedor');
+
+        $logoPath = public_path('logo.png');
+        $empresa  = $this->empresa->obtener();
+
+        $pdf = Pdf::loadView('pdfs.boleta', [
+            'venta'    => $venta,
+            'empresa'  => $empresa,
+            'logoPath' => $logoPath,
+        ])->setPaper('a4', 'portrait');
+
+        $nombre = sprintf(
+            'boleta_%s.pdf',
+            $venta->boleta?->numero_formateado
+                ? str_replace(['/', ' '], '_', $venta->boleta->numero_formateado)
+                : $venta->id,
+        );
+
+        return $pdf->download($nombre);
     }
 
     /**

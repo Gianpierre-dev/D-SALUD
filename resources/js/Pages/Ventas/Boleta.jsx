@@ -1,5 +1,5 @@
 import { Head, Link } from '@inertiajs/react';
-import { IconPrinter, IconArrowLeft } from '@tabler/icons-react';
+import { IconPrinter, IconArrowLeft, IconFileTypePdf } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { ESTADO_VENTA } from '@/constants';
 import { formatearMoneda } from '@/utils/format';
@@ -51,13 +51,20 @@ export default function Boleta({ venta, empresa }) {
                     <IconArrowLeft className="h-4 w-4" />
                     Volver al historial
                 </Link>
+                <a
+                    href={route('ventas.boleta.pdf', venta.id)}
+                    className="inline-flex items-center gap-1 rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                >
+                    <IconFileTypePdf className="h-4 w-4" />
+                    Descargar PDF
+                </a>
                 <button
                     type="button"
                     onClick={() => window.print()}
-                    className="inline-flex items-center gap-1 rounded-md bg-brand-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-brand-700 focus:outline-none focus:ring-2 focus:ring-brand-500"
+                    className="inline-flex items-center gap-1 rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700"
                 >
                     <IconPrinter className="h-4 w-4" />
-                    Imprimir / Guardar PDF
+                    Imprimir
                 </button>
             </div>
 
