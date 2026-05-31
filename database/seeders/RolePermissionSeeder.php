@@ -39,6 +39,8 @@ class RolePermissionSeeder extends Seeder
         'inventario.read', 'inventario.create',
         // Compras (órdenes a proveedor + recepción)
         'compras.read', 'compras.create', 'compras.update', 'compras.delete', 'compras.recibir',
+        // Cajas (turno operativo: apertura, cierre, reporte Z)
+        'cajas.read', 'cajas.create', 'cajas.close',
         // Ventas
         'ventas.read', 'ventas.create', 'ventas.cancel',
         // Reportes
@@ -66,6 +68,11 @@ class RolePermissionSeeder extends Seeder
         'clientes.create',
         'ventas.read',
         'ventas.create',
+        // Cajas: el vendedor abre, ve y cierra SUS propias cajas
+        // (la restricción de "propias" se aplica en CajaController::autorizar).
+        'cajas.read',
+        'cajas.create',
+        'cajas.close',
     ];
 
     public function run(): void

@@ -1,6 +1,6 @@
 import { useRef, useState } from 'react';
-import { Head, router } from '@inertiajs/react';
-import { IconShoppingCart, IconSearch, IconUserHeart } from '@tabler/icons-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { IconShoppingCart, IconSearch, IconUserHeart, IconCashRegister } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SelectInput from '@/Components/SelectInput';
@@ -28,12 +28,45 @@ function generarIdempotencyKey() {
     return 'k-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
 }
 
-export default function Create({ productos, clientes = [] }) {
+export default function Create({ productos, clientes = [], cajaAbierta = null }) {
     const [busqueda, setBusqueda] = useState('');
     const [carrito, setCarrito] = useState([]);
     const [clienteId, setClienteId] = useState('');
     const [procesando, setProcesando] = useState(false);
     const idempotencyKeyRef = useRef(generarIdempotencyKey());
+
+    // Sin caja abierta el POS está bloqueado. El backend ya rechaza el POST,
+    // pero acá mostramos el CTA prominente para no dejar al cajero perdido.
+    if (!cajaAbierta) {
+        return (
+            <AuthenticatedLayout
+                header={
+                    <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
+                        Nueva venta
+                    </h2>
+                }
+            >
+                <Head title="Nueva venta" />
+                <div className="mx-auto max-w-xl">
+                    <div className="rounded-lg border border-amber-200 bg-amber-50 p-6 text-center dark:border-amber-800 dark:bg-amber-900/20">
+                        <IconCashRegister className="mx-auto h-12 w-12 text-amber-600 dark:text-amber-400" />
+                        <h3 className="mt-3 text-lg font-semibold text-amber-700 dark:text-amber-300">
+                            No tienes una caja abierta
+                        </h3>
+                        <p className="mt-1 text-sm text-amber-700 dark:text-amber-400">
+                            Para registrar ventas necesitas abrir una caja con el monto inicial
+                            en efectivo. Al cerrar el turno, el sistema calculará el cuadre.
+                        </p>
+                        <div className="mt-4">
+                            <Link href={route('cajas.index')}>
+                                <PrimaryButton>Ir a Cajas</PrimaryButton>
+                            </Link>
+                        </div>
+                    </div>
+                </div>
+            </AuthenticatedLayout>
+        );
+    }
 
     // ---------- Helpers ----------
 

@@ -8,6 +8,7 @@ use App\Enums\Rol;
 use App\Http\Requests\Venta\AnularVentaRequest;
 use App\Http\Requests\Venta\StoreVentaRequest;
 use App\Models\Venta;
+use App\Services\CajaService;
 use App\Services\ClienteService;
 use App\Services\EmpresaService;
 use App\Services\VentaService;
@@ -25,17 +26,23 @@ class VentaController extends Controller
         private readonly VentaService $service,
         private readonly EmpresaService $empresa,
         private readonly ClienteService $clientes,
+        private readonly CajaService $cajas,
     ) {
     }
 
     /**
      * Punto de venta (POS): formulario de nueva venta.
      */
-    public function create(): Response
+    public function create(\Illuminate\Http\Request $request): Response
     {
+        // Sin caja abierta no se puede vender: el POS muestra CTA "Abrir caja".
+        // El frontend ya tiene esta lógica; el backend la refuerza en store().
+        $cajaAbierta = $this->cajas->cajaAbiertaDe($request->user()->id);
+
         return Inertia::render('Ventas/Create', [
-            'productos' => $this->service->productosDisponibles(),
-            'clientes'  => $this->clientes->activos(),
+            'productos'   => $this->service->productosDisponibles(),
+            'clientes'    => $this->clientes->activos(),
+            'cajaAbierta' => $cajaAbierta,
         ]);
     }
 
@@ -50,6 +57,17 @@ class VentaController extends Controller
     public function store(StoreVentaRequest $request): RedirectResponse
     {
         $userId = $request->user()->id;
+
+        // Bloqueo POS: sin caja abierta no se puede vender. El frontend muestra
+        // CTA pero el backend es autoritativo (cualquier request con curl/Postman
+        // sería rechazada acá igual).
+        if ($this->cajas->cajaAbiertaDe($userId) === null) {
+            return back()->with(
+                'error',
+                'No tienes una caja abierta. Abre una caja antes de registrar ventas.',
+            );
+        }
+
         $idempotencyKey = $this->resolverIdempotencyKey($request, $userId);
 
         if ($idempotencyKey !== null) {

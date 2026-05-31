@@ -20,7 +20,10 @@ enum MotivoMovimiento: string
     case AJUSTE_NEGATIVO     = 'AJUSTE_NEGATIVO';
     case MERMA               = 'MERMA';
     case VENCIMIENTO         = 'VENCIMIENTO';
-    case DEVOLUCION_CLIENTE  = 'DEVOLUCION_CLIENTE';
+    // Nota: D'Salud NO acepta devoluciones de cliente. Si la política cambia
+    // en el futuro, agregar DEVOLUCION_CLIENTE acá + en tipo() + etiqueta() +
+    // manuales(). La ANULACION_VENTA queda como mecanismo de rectificación
+    // de errores de registro (no es una devolución física).
     case DEVOLUCION_PROVEEDOR = 'DEVOLUCION_PROVEEDOR';
 
     // Reservado para el futuro módulo de Compras
@@ -35,8 +38,7 @@ enum MotivoMovimiento: string
             self::COMPRA,
             self::ANULACION_VENTA,
             self::INVENTARIO_INICIAL,
-            self::AJUSTE_POSITIVO,
-            self::DEVOLUCION_CLIENTE => TipoMovimiento::ENTRADA,
+            self::AJUSTE_POSITIVO => TipoMovimiento::ENTRADA,
 
             self::VENTA,
             self::AJUSTE_NEGATIVO,
@@ -60,7 +62,6 @@ enum MotivoMovimiento: string
             self::AJUSTE_NEGATIVO     => 'Ajuste negativo',
             self::MERMA               => 'Merma',
             self::VENCIMIENTO         => 'Vencimiento',
-            self::DEVOLUCION_CLIENTE  => 'Devolución de cliente',
             self::DEVOLUCION_PROVEEDOR => 'Devolución a proveedor',
         };
     }
@@ -79,7 +80,6 @@ enum MotivoMovimiento: string
             self::AJUSTE_NEGATIVO,
             self::MERMA,
             self::VENCIMIENTO,
-            self::DEVOLUCION_CLIENTE,
             self::DEVOLUCION_PROVEEDOR,
         ];
     }

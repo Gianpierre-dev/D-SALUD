@@ -2,6 +2,7 @@ import {
     IconLayoutDashboard,
     IconShoppingCart,
     IconReceipt2,
+    IconCashRegister,
     IconPill,
     IconCategory,
     IconPackages,
@@ -28,6 +29,7 @@ export const navigation = [
             { label: 'Dashboard', routeName: 'dashboard', permission: 'dashboard.read', icon: IconLayoutDashboard },
             { label: 'Nueva Venta', routeName: 'ventas.create', permission: 'ventas.create', icon: IconShoppingCart },
             { label: 'Historial de Ventas', routeName: 'ventas.index', permission: 'ventas.read', icon: IconReceipt2 },
+            { label: 'Cajas', routeName: 'cajas.index', permission: 'cajas.read', icon: IconCashRegister },
         ],
     },
     {

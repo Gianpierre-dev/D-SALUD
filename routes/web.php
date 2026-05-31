@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\AuditoriaController;
+use App\Http\Controllers\CajaController;
 use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\CompraController;
@@ -179,6 +180,22 @@ Route::middleware('auth')->group(function () {
         Route::get('configuracion', [EmpresaController::class, 'edit'])->name('configuracion.edit');
         Route::put('configuracion', [EmpresaController::class, 'update'])->name('configuracion.update');
     });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cajas (turno: apertura, cierre, reporte Z)
+    |--------------------------------------------------------------------------
+    */
+    Route::get('cajas', [CajaController::class, 'index'])
+        ->name('cajas.index')->middleware('permission:cajas.read');
+    Route::post('cajas', [CajaController::class, 'store'])
+        ->name('cajas.store')->middleware('permission:cajas.create');
+    Route::get('cajas/{caja}', [CajaController::class, 'show'])
+        ->name('cajas.show')->middleware('permission:cajas.read');
+    Route::put('cajas/{caja}/cerrar', [CajaController::class, 'close'])
+        ->name('cajas.close')->middleware('permission:cajas.close');
+    Route::get('cajas/{caja}/reporte-z.pdf', [CajaController::class, 'reporteZ'])
+        ->name('cajas.reporteZ')->middleware('permission:cajas.read');
 
     /*
     |--------------------------------------------------------------------------
