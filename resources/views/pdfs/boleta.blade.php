@@ -174,7 +174,7 @@
         <p class="numero">{{ $boleta?->numero_formateado ?? '—' }}</p>
     </div>
 
-    {{-- Meta: fecha + vendedor --}}
+    {{-- Meta: fecha + vendedor + cliente (si aplica) --}}
     <table class="meta">
         <tr>
             <td class="etiqueta">Fecha:</td>
@@ -184,6 +184,16 @@
             <td class="etiqueta">Vendedor:</td>
             <td>{{ $vendedor?->name ?? '—' }}</td>
         </tr>
+        @if ($venta->cliente)
+            <tr>
+                <td class="etiqueta">Cliente:</td>
+                <td>{{ $venta->cliente->nombre }}</td>
+            </tr>
+            <tr>
+                <td class="etiqueta">{{ $venta->cliente->tipo_documento->value }}:</td>
+                <td>{{ $venta->cliente->numero_documento }}</td>
+            </tr>
+        @endif
     </table>
 
     <hr class="divider">

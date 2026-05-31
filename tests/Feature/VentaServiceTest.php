@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Cliente;
 use App\Models\Lote;
 use App\Models\Producto;
 use App\Models\User;
@@ -293,5 +294,40 @@ class VentaServiceTest extends TestCase
         $this->expectExceptionMessage('ya está anulada');
 
         $this->servicio->anular($venta->fresh(), 'Segundo intento', $admin->id);
+    }
+
+    // -------------------------------------------------------------------------
+    // Cliente vinculado
+    // -------------------------------------------------------------------------
+
+    public function test_registrar_persiste_cliente_id_cuando_se_envia(): void
+    {
+        $producto = Producto::factory()->create(['precio_venta' => 10.00, 'activo' => true]);
+        Lote::factory()->vigente()->conStock(20)->create(['producto_id' => $producto->id]);
+
+        $cliente = Cliente::factory()->create();
+
+        $venta = $this->servicio->registrar(
+            [['producto_id' => $producto->id, 'cantidad' => 2]],
+            $this->vendedor->id,
+            $cliente->id,
+        );
+
+        $this->assertSame($cliente->id, $venta->cliente_id);
+        $this->assertTrue($venta->cliente->is($cliente));
+    }
+
+    public function test_registrar_sin_cliente_deja_cliente_id_null(): void
+    {
+        $producto = Producto::factory()->create(['precio_venta' => 10.00, 'activo' => true]);
+        Lote::factory()->vigente()->conStock(20)->create(['producto_id' => $producto->id]);
+
+        $venta = $this->servicio->registrar(
+            [['producto_id' => $producto->id, 'cantidad' => 1]],
+            $this->vendedor->id,
+        );
+
+        $this->assertNull($venta->cliente_id);
+        $this->assertNull($venta->cliente);
     }
 }

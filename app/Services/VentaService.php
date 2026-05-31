@@ -38,15 +38,17 @@ class VentaService
      * la transacción hace rollback automático.
      *
      * @param  array<int, array{producto_id: int, cantidad: int}>  $items
+     * @param  int|null  $clienteId  Cliente vinculado a la venta (null = consumidor final).
      * @throws \RuntimeException  Cuando el stock de un producto es insuficiente.
      */
-    public function registrar(array $items, int $userId): Venta
+    public function registrar(array $items, int $userId, ?int $clienteId = null): Venta
     {
-        return DB::transaction(function () use ($items, $userId): Venta {
+        return DB::transaction(function () use ($items, $userId, $clienteId): Venta {
             $venta = Venta::create([
-                'user_id' => $userId,
-                'total'   => 0,
-                'estado'  => Venta::ESTADO_COMPLETADA,
+                'user_id'    => $userId,
+                'cliente_id' => $clienteId,
+                'total'      => 0,
+                'estado'     => Venta::ESTADO_COMPLETADA,
             ]);
 
             $total = 0.0;
@@ -65,7 +67,7 @@ class VentaService
                 "Venta #{$venta->id} - Boleta {$boleta->numero_formateado} - Total S/ {$venta->total}"
             );
 
-            return $venta->load('detalles.producto', 'boleta');
+            return $venta->load('detalles.producto', 'boleta', 'cliente');
         });
     }
 

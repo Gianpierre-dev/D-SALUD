@@ -1,8 +1,10 @@
 import { useRef, useState } from 'react';
 import { Head, router } from '@inertiajs/react';
-import { IconShoppingCart, IconSearch } from '@tabler/icons-react';
+import { IconShoppingCart, IconSearch, IconUserHeart } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PrimaryButton from '@/Components/PrimaryButton';
+import SelectInput from '@/Components/SelectInput';
+import InputLabel from '@/Components/InputLabel';
 import CarritoItem from './Partials/CarritoItem';
 import { formatearMoneda } from '@/utils/format';
 
@@ -26,9 +28,10 @@ function generarIdempotencyKey() {
     return 'k-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 10);
 }
 
-export default function Create({ productos }) {
+export default function Create({ productos, clientes = [] }) {
     const [busqueda, setBusqueda] = useState('');
     const [carrito, setCarrito] = useState([]);
+    const [clienteId, setClienteId] = useState('');
     const [procesando, setProcesando] = useState(false);
     const idempotencyKeyRef = useRef(generarIdempotencyKey());
 
@@ -113,11 +116,15 @@ export default function Create({ productos }) {
         setProcesando(true);
         router.post(
             route('ventas.store'),
-            { items: carrito.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })) },
+            {
+                cliente_id: clienteId ? Number(clienteId) : null,
+                items: carrito.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })),
+            },
             {
                 headers: { 'Idempotency-Key': idempotencyKeyRef.current },
                 onSuccess: () => {
                     setCarrito([]);
+                    setClienteId('');
                     // Tras un éxito real, rotamos la key para la próxima venta.
                     idempotencyKeyRef.current = generarIdempotencyKey();
                 },
@@ -227,6 +234,33 @@ export default function Create({ productos }) {
                                     ))}
                                 </div>
                             )}
+
+                            {/* Selector de cliente (opcional). Si se omite, queda
+                                como venta a consumidor final. */}
+                            <div className="mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">
+                                <InputLabel
+                                    htmlFor="cliente_id"
+                                    value={(
+                                        <span className="flex items-center gap-1">
+                                            <IconUserHeart className="h-4 w-4 text-brand-500" />
+                                            Cliente (opcional)
+                                        </span>
+                                    )}
+                                />
+                                <SelectInput
+                                    id="cliente_id"
+                                    className="mt-1 block w-full text-sm"
+                                    value={clienteId}
+                                    onChange={(e) => setClienteId(e.target.value)}
+                                >
+                                    <option value="">Consumidor final</option>
+                                    {clientes.map((c) => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.tipo_documento} {c.numero_documento} — {c.nombre}
+                                        </option>
+                                    ))}
+                                </SelectInput>
+                            </div>
 
                             {/* Total y botón de registro */}
                             <div className="mt-4 border-t border-gray-200 pt-4 dark:border-gray-700">

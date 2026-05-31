@@ -33,6 +33,8 @@ class RolePermissionSeeder extends Seeder
         'lotes.read', 'lotes.create', 'lotes.update', 'lotes.delete',
         // Proveedores
         'proveedores.read', 'proveedores.create', 'proveedores.update', 'proveedores.delete',
+        // Clientes
+        'clientes.read', 'clientes.create', 'clientes.update', 'clientes.delete',
         // Ventas
         'ventas.read', 'ventas.create', 'ventas.cancel',
         // Reportes
@@ -54,6 +56,10 @@ class RolePermissionSeeder extends Seeder
         'categorias.read',
         'productos.read',
         'lotes.read',
+        // El Vendedor puede consultar y crear clientes desde el POS,
+        // pero no editarlos ni eliminarlos (eso queda al Administrador).
+        'clientes.read',
+        'clientes.create',
         'ventas.read',
         'ventas.create',
     ];

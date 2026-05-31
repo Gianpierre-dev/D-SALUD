@@ -23,6 +23,7 @@ class StoreVentaRequest extends FormRequest
         // un Producto::find + un lockForUpdate sobre los lotes; sin tope una sola
         // request podía bloquear la tabla `lotes` durante minutos.
         return [
+            'cliente_id'             => ['nullable', 'integer', 'exists:clientes,id'],
             'items'                  => ['required', 'array', 'min:1', 'max:50'],
             'items.*.producto_id'    => ['required', 'integer', 'distinct', 'exists:productos,id'],
             'items.*.cantidad'       => ['required', 'integer', 'min:1', 'max:10000'],
@@ -35,6 +36,7 @@ class StoreVentaRequest extends FormRequest
     public function attributes(): array
     {
         return [
+            'cliente_id'          => 'cliente',
             'items'               => 'lista de productos',
             'items.*.producto_id' => 'producto',
             'items.*.cantidad'    => 'cantidad',

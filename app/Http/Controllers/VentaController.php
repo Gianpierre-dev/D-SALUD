@@ -8,6 +8,7 @@ use App\Enums\Rol;
 use App\Http\Requests\Venta\AnularVentaRequest;
 use App\Http\Requests\Venta\StoreVentaRequest;
 use App\Models\Venta;
+use App\Services\ClienteService;
 use App\Services\EmpresaService;
 use App\Services\VentaService;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -23,6 +24,7 @@ class VentaController extends Controller
     public function __construct(
         private readonly VentaService $service,
         private readonly EmpresaService $empresa,
+        private readonly ClienteService $clientes,
     ) {
     }
 
@@ -33,6 +35,7 @@ class VentaController extends Controller
     {
         return Inertia::render('Ventas/Create', [
             'productos' => $this->service->productosDisponibles(),
+            'clientes'  => $this->clientes->activos(),
         ]);
     }
 
@@ -62,9 +65,13 @@ class VentaController extends Controller
         }
 
         try {
+            $validated = $request->validated();
+            $clienteId = isset($validated['cliente_id']) ? (int) $validated['cliente_id'] : null;
+
             $venta = $this->service->registrar(
-                $request->validated()['items'],
+                $validated['items'],
                 $userId,
+                $clienteId,
             );
 
             if ($idempotencyKey !== null) {
@@ -136,7 +143,7 @@ class VentaController extends Controller
             abort(403, 'No tienes permiso para ver esta boleta.');
         }
 
-        $venta->load('detalles.producto', 'boleta', 'vendedor');
+        $venta->load('detalles.producto', 'boleta', 'vendedor', 'cliente');
 
         return Inertia::render('Ventas/Boleta', [
             'venta'   => $venta,
@@ -161,7 +168,7 @@ class VentaController extends Controller
             abort(403, 'No tienes permiso para descargar esta boleta.');
         }
 
-        $venta->load('detalles.producto', 'boleta', 'vendedor');
+        $venta->load('detalles.producto', 'boleta', 'vendedor', 'cliente');
 
         $logoPath = public_path('logo.png');
         $empresa  = $this->empresa->obtener();

@@ -122,6 +122,22 @@ export default function Boleta({ venta, empresa }) {
                     <span className="text-gray-800 dark:text-gray-200 print:text-black">
                         {vendedor?.name ?? '—'}
                     </span>
+                    {venta.cliente && (
+                        <>
+                            <span className="text-gray-500 dark:text-gray-400 print:text-black">
+                                Cliente:
+                            </span>
+                            <span className="text-gray-800 dark:text-gray-200 print:text-black">
+                                {venta.cliente.nombre}
+                            </span>
+                            <span className="text-gray-500 dark:text-gray-400 print:text-black">
+                                {venta.cliente.tipo_documento}:
+                            </span>
+                            <span className="text-gray-800 dark:text-gray-200 print:text-black">
+                                {venta.cliente.numero_documento}
+                            </span>
+                        </>
+                    )}
                 </div>
 
                 <hr className="mb-4 border-dashed border-gray-300 dark:border-gray-600" />

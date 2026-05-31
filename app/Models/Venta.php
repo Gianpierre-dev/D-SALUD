@@ -21,6 +21,7 @@ class Venta extends Model
 
     protected $fillable = [
         'user_id',
+        'cliente_id',
         'total',
         'estado',
         'motivo_anulacion',
@@ -36,6 +37,11 @@ class Venta extends Model
     public function vendedor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    public function cliente(): BelongsTo
+    {
+        return $this->belongsTo(Cliente::class);
     }
 
     public function anuladaPor(): BelongsTo

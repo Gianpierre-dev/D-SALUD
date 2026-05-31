@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\AuditoriaController;
 use App\Http\Controllers\CategoriaController;
+use App\Http\Controllers\ClienteController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EmpresaController;
 use App\Http\Controllers\LoteController;
@@ -56,6 +57,20 @@ Route::middleware('auth')->group(function () {
         ->name('proveedores.update')->middleware('permission:proveedores.update');
     Route::delete('proveedores/{proveedor}', [ProveedorController::class, 'destroy'])
         ->name('proveedores.destroy')->middleware('permission:proveedores.delete');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Clientes
+    |--------------------------------------------------------------------------
+    */
+    Route::get('clientes', [ClienteController::class, 'index'])
+        ->name('clientes.index')->middleware('permission:clientes.read');
+    Route::post('clientes', [ClienteController::class, 'store'])
+        ->name('clientes.store')->middleware('permission:clientes.create');
+    Route::put('clientes/{cliente}', [ClienteController::class, 'update'])
+        ->name('clientes.update')->middleware('permission:clientes.update');
+    Route::delete('clientes/{cliente}', [ClienteController::class, 'destroy'])
+        ->name('clientes.destroy')->middleware('permission:clientes.delete');
 
     /*
     |--------------------------------------------------------------------------

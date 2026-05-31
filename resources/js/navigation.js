@@ -6,6 +6,7 @@ import {
     IconCategory,
     IconPackages,
     IconTruck,
+    IconUserHeart,
     IconFileSpreadsheet,
     IconUsers,
     IconShieldLock,
@@ -34,6 +35,12 @@ export const navigation = [
             { label: 'Categorías', routeName: 'categorias.index', permission: 'categorias.read', icon: IconCategory },
             { label: 'Lotes', routeName: 'lotes.index', permission: 'lotes.read', icon: IconPackages },
             { label: 'Proveedores', routeName: 'proveedores.index', permission: 'proveedores.read', icon: IconTruck },
+        ],
+    },
+    {
+        section: 'Comercial',
+        items: [
+            { label: 'Clientes', routeName: 'clientes.index', permission: 'clientes.read', icon: IconUserHeart },
         ],
     },
     {
