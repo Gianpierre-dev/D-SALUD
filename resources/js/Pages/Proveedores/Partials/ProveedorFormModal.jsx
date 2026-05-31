@@ -73,17 +73,24 @@ export default function ProveedorFormModal({ show, onClose, proveedor = null }) 
                 </h2>
 
                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    {/* RUC */}
+                    {/* RUC — solo dígitos: el onChange descarta cualquier
+                        carácter no numérico al tipear o pegar. La validación
+                        autoritativa vive en StoreProveedorRequest (size:11 + regex). */}
                     <div>
                         <InputLabel htmlFor="ruc" value="RUC" />
                         <TextInput
                             id="ruc"
                             className="mt-1 block w-full"
                             value={data.ruc}
-                            onChange={(e) => setData('ruc', e.target.value)}
+                            onChange={(e) =>
+                                setData('ruc', e.target.value.replace(/\D/g, '').slice(0, 11))
+                            }
                             maxLength={11}
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             isFocused
                             autoComplete="off"
+                            placeholder="11 dígitos"
                         />
                         <InputError message={errors.ruc} className="mt-2" />
                     </div>

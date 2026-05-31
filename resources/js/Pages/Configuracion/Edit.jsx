@@ -49,17 +49,23 @@ export default function Edit({ empresa }) {
                             <InputError message={errors.razon_social} className="mt-2" />
                         </div>
 
-                        {/* RUC */}
+                        {/* RUC — solo dígitos: el onChange descarta cualquier
+                            carácter no numérico al tipear o pegar. La validación
+                            autoritativa vive en UpdateEmpresaRequest (size:11 + regex). */}
                         <div>
                             <InputLabel htmlFor="ruc" value="RUC" />
                             <TextInput
                                 id="ruc"
                                 className="mt-1 block w-full dark:bg-gray-900 dark:text-gray-300"
                                 value={data.ruc}
-                                onChange={(e) => setData('ruc', e.target.value)}
+                                onChange={(e) =>
+                                    setData('ruc', e.target.value.replace(/\D/g, '').slice(0, 11))
+                                }
                                 maxLength={11}
                                 inputMode="numeric"
+                                pattern="[0-9]*"
                                 autoComplete="off"
+                                placeholder="11 dígitos"
                             />
                             <InputError message={errors.ruc} className="mt-2" />
                         </div>
