@@ -25,6 +25,9 @@ class ClienteService
     public function paginar(?string $buscar): LengthAwarePaginator
     {
         return Cliente::query()
+            // Conteo de ventas como subquery: una sola consulta agregada en lugar
+            // de N+1 al renderizar la columna "Ventas" en el listado.
+            ->withCount('ventas')
             ->when(
                 $buscar,
                 fn ($query, $termino) => $query->where(function ($q) use ($termino): void {

@@ -15,7 +15,7 @@ import { formatearMoneda } from '@/utils/format';
 /**
  * Historial de ventas con filtros y acciones de reimprimir / anular.
  */
-export default function Index({ ventas, vendedores = [], filtros, esAdmin = false }) {
+export default function Index({ ventas, vendedores = [], clientes = [], filtros, esAdmin = false }) {
     const [ventaAnular, setVentaAnular] = useState(null);
 
     // ---------- Filtros ----------
@@ -55,6 +55,21 @@ export default function Index({ ventas, vendedores = [], filtros, esAdmin = fals
             key: 'vendedor',
             label: 'Vendedor',
             render: (row) => row.vendedor?.name ?? <span className="text-gray-400">—</span>,
+        },
+        {
+            key: 'cliente',
+            label: 'Cliente',
+            render: (row) =>
+                row.cliente ? (
+                    <span className="text-sm">
+                        <span className="me-1 inline-flex items-center rounded bg-gray-100 px-1.5 py-0.5 text-xs font-semibold text-gray-700 dark:bg-gray-700 dark:text-gray-200">
+                            {row.cliente.tipo_documento}
+                        </span>
+                        {row.cliente.nombre}
+                    </span>
+                ) : (
+                    <span className="text-gray-400">Consumidor final</span>
+                ),
         },
         {
             key: 'total',
@@ -135,6 +150,22 @@ export default function Index({ ventas, vendedores = [], filtros, esAdmin = fals
                             ))}
                         </SelectInput>
                     )}
+
+                    {/* Cliente (visible para todos: el vendedor ya está acotado a sus ventas) */}
+                    <SelectInput
+                        value={filtros.cliente_id ?? ''}
+                        onChange={(e) =>
+                            aplicarFiltros({ cliente_id: e.target.value || null })
+                        }
+                        className="w-full text-sm sm:w-auto"
+                    >
+                        <option value="">Todos los clientes</option>
+                        {clientes.map((c) => (
+                            <option key={c.id} value={c.id}>
+                                {c.tipo_documento} {c.numero_documento} — {c.nombre}
+                            </option>
+                        ))}
+                    </SelectInput>
 
                     {/* Estado */}
                     <SelectInput

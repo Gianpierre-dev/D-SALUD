@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Models\Cliente;
 use App\Models\Empresa;
 use App\Models\Lote;
 use App\Models\Producto;
@@ -159,5 +160,92 @@ class VentaAccesoTest extends TestCase
         $response = $this->get('/register');
 
         $response->assertStatus(404);
+    }
+
+    // -------------------------------------------------------------------------
+    // Filtro de historial por cliente_id
+    // -------------------------------------------------------------------------
+
+    public function test_admin_filtra_historial_por_cliente_id(): void
+    {
+        $admin = User::factory()->create();
+        $admin->assignRole('Administrador');
+
+        $clienteA = Cliente::factory()->create();
+        $clienteB = Cliente::factory()->create();
+
+        // Venta de A
+        $this->actingAs($admin);
+        $producto = Producto::factory()->create(['precio_venta' => 10.00, 'activo' => true]);
+        Lote::factory()->vigente()->conStock(50)->create(['producto_id' => $producto->id]);
+        $ventaA = $this->servicio->registrar(
+            [['producto_id' => $producto->id, 'cantidad' => 1]],
+            $admin->id,
+            $clienteA->id,
+        );
+
+        // Venta de B
+        Lote::factory()->vigente()->conStock(50)->create(['producto_id' => $producto->id]);
+        $ventaB = $this->servicio->registrar(
+            [['producto_id' => $producto->id, 'cantidad' => 1]],
+            $admin->id,
+            $clienteB->id,
+        );
+
+        // Venta sin cliente (no debe aparecer en el filtro)
+        Lote::factory()->vigente()->conStock(50)->create(['producto_id' => $producto->id]);
+        $ventaSinCliente = $this->servicio->registrar(
+            [['producto_id' => $producto->id, 'cantidad' => 1]],
+            $admin->id,
+        );
+
+        // Filtrando por clienteA solo debe venir ventaA.
+        $response = $this->get(route('ventas.index', ['cliente_id' => $clienteA->id]));
+        $response->assertStatus(200);
+
+        $ids = collect($response->viewData('page')['props']['ventas']['data'])->pluck('id')->all();
+        $this->assertContains($ventaA->id, $ids);
+        $this->assertNotContains($ventaB->id, $ids);
+        $this->assertNotContains($ventaSinCliente->id, $ids);
+    }
+
+    public function test_vendedor_filtra_por_cliente_solo_sobre_sus_propias_ventas(): void
+    {
+        $vendedor = User::factory()->create();
+        $vendedor->assignRole('Vendedor');
+
+        $otroVendedor = User::factory()->create();
+        $otroVendedor->assignRole('Vendedor');
+
+        $cliente = Cliente::factory()->create();
+
+        $producto = Producto::factory()->create(['precio_venta' => 10.00, 'activo' => true]);
+
+        // Venta del vendedor (debe aparecer)
+        $this->actingAs($vendedor);
+        Lote::factory()->vigente()->conStock(20)->create(['producto_id' => $producto->id]);
+        $ventaPropia = $this->servicio->registrar(
+            [['producto_id' => $producto->id, 'cantidad' => 1]],
+            $vendedor->id,
+            $cliente->id,
+        );
+
+        // Venta de otro vendedor al MISMO cliente (NO debe aparecer)
+        $this->actingAs($otroVendedor);
+        Lote::factory()->vigente()->conStock(20)->create(['producto_id' => $producto->id]);
+        $ventaAjena = $this->servicio->registrar(
+            [['producto_id' => $producto->id, 'cantidad' => 1]],
+            $otroVendedor->id,
+            $cliente->id,
+        );
+
+        // El vendedor consulta con filtro cliente_id
+        $this->actingAs($vendedor);
+        $response = $this->get(route('ventas.index', ['cliente_id' => $cliente->id]));
+        $response->assertStatus(200);
+
+        $ids = collect($response->viewData('page')['props']['ventas']['data'])->pluck('id')->all();
+        $this->assertContains($ventaPropia->id, $ids);
+        $this->assertNotContains($ventaAjena->id, $ids);
     }
 }

@@ -1,5 +1,5 @@
-import { Head, router } from '@inertiajs/react';
-import { IconPencil, IconTrash, IconPlus } from '@tabler/icons-react';
+import { Head, Link, router } from '@inertiajs/react';
+import { IconPencil, IconTrash, IconPlus, IconReceipt2 } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import DataTable from '@/Components/DataTable';
 import Pagination from '@/Components/Pagination';
@@ -47,6 +47,26 @@ export default function Index({ clientes, filtros }) {
             key: 'email',
             label: 'Correo',
             render: (row) => row.email || '—',
+        },
+        {
+            key: 'ventas_count',
+            label: 'Ventas',
+            render: (row) => (
+                <Can permission="ventas.read" fallback={
+                    <span className="text-sm text-gray-600 dark:text-gray-300">
+                        {row.ventas_count ?? 0}
+                    </span>
+                }>
+                    <Link
+                        href={route('ventas.index', { cliente_id: row.id })}
+                        className="inline-flex items-center gap-1 text-sm font-medium text-brand-600 hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+                        title="Ver historial de ventas de este cliente"
+                    >
+                        <IconReceipt2 className="h-4 w-4" />
+                        {row.ventas_count ?? 0}
+                    </Link>
+                </Can>
+            ),
         },
         {
             key: 'activo',

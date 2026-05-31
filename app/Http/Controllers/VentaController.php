@@ -120,12 +120,15 @@ class VentaController extends Controller
             'fecha'       => $request->string('fecha')->trim()->value() ?: null,
             // El vendedor solo ve sus propias ventas; el administrador puede filtrar por cualquiera.
             'vendedor_id' => $esAdmin ? ($request->integer('vendedor_id') ?: null) : $request->user()->id,
+            'cliente_id'  => $request->integer('cliente_id') ?: null,
             'estado'      => $request->string('estado')->trim()->value() ?: null,
         ];
 
         return Inertia::render('Ventas/Index', [
             'ventas'     => $this->service->paginarHistorial($filtros),
             'vendedores' => $esAdmin ? $this->service->vendedores() : [],
+            // Lista compartida con el POS: cliente como atajo de filtro.
+            'clientes'   => $this->clientes->activos(),
             'filtros'    => $filtros,
             'esAdmin'    => $esAdmin,
         ]);

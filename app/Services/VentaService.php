@@ -230,11 +230,11 @@ class VentaService
     /**
      * Historial paginado de ventas con filtros opcionales.
      *
-     * @param  array{fecha?: string|null, vendedor_id?: int|null, estado?: string|null}  $filtros
+     * @param  array{fecha?: string|null, vendedor_id?: int|null, estado?: string|null, cliente_id?: int|null}  $filtros
      */
     public function paginarHistorial(array $filtros): LengthAwarePaginator
     {
-        return Venta::with(['vendedor', 'boleta'])
+        return Venta::with(['vendedor', 'boleta', 'cliente:id,tipo_documento,numero_documento,nombre'])
             ->when(
                 $filtros['fecha'] ?? null,
                 // whereBetween sargable: usa el índice (ventas_estado_created_idx).
@@ -247,6 +247,10 @@ class VentaService
             ->when(
                 $filtros['vendedor_id'] ?? null,
                 fn ($q, $id) => $q->where('user_id', $id)
+            )
+            ->when(
+                $filtros['cliente_id'] ?? null,
+                fn ($q, $id) => $q->where('cliente_id', $id)
             )
             ->when(
                 $filtros['estado'] ?? null,
