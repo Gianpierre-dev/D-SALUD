@@ -1,3 +1,60 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Reglas globales de impresión.
+ *
+ * El AuthenticatedLayout muestra sidebar + topbar + footer; al imprimir
+ * una boleta o un reporte debemos dejar SOLO el contenido del recibo,
+ * con fondo blanco y márgenes mínimos. Los componentes que se imprimen
+ * deben llevar la clase Tailwind `print:visible-area` o, en su defecto,
+ * estar dentro de un id="boleta-imprimible".
+ */
+@media print {
+    /* Forzar colores reales (sin "ahorro de tinta" del navegador): el logo
+       y la línea de marca de la boleta deben verse igual que en pantalla. */
+    *,
+    *::before,
+    *::after {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    /* Fondo blanco neutro: anula el dark mode y los grises del layout. */
+    html,
+    body {
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    /* Sidebar y topbar del AuthenticatedLayout fuera de la página impresa. */
+    aside,
+    header,
+    nav,
+    footer {
+        display: none !important;
+    }
+
+    /* El contenedor principal del layout queda como página simple. */
+    main {
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+
+    /* Página recibo: ocupa el ancho disponible, sin borde ni sombra. */
+    #boleta-imprimible {
+        box-shadow: none !important;
+        border: 0 !important;
+        margin: 0 auto !important;
+        padding: 12mm 10mm !important;
+        max-width: none !important;
+        background: #ffffff !important;
+        color: #000000 !important;
+    }
+
+    /* Tarjetas/cards que pudieran quedar dentro del flujo de print. */
+    .print\:break-inside-avoid {
+        break-inside: avoid !important;
+    }
+}
