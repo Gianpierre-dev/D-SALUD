@@ -8,6 +8,7 @@ import Checkbox from '@/Components/Checkbox';
 import SelectInput from '@/Components/SelectInput';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import { soloDigitos, soloDecimalPositivo } from '@/utils/inputs';
 
 /**
  * Modal de creación/edición de producto.
@@ -159,12 +160,12 @@ export default function ProductoFormModal({
                         <InputLabel htmlFor="precio_venta" value="Precio de venta" />
                         <TextInput
                             id="precio_venta"
-                            type="number"
-                            step="0.01"
-                            min="0"
+                            inputMode="decimal"
+                            pattern="[0-9]*[.]?[0-9]*"
                             className="mt-1 block w-full"
                             value={data.precio_venta}
-                            onChange={(e) => setData('precio_venta', e.target.value)}
+                            onChange={(e) => setData('precio_venta', soloDecimalPositivo(e.target.value, 8, 2))}
+                            placeholder="0.00"
                         />
                         <InputError message={errors.precio_venta} className="mt-2" />
                     </div>
@@ -175,12 +176,12 @@ export default function ProductoFormModal({
                     <InputLabel htmlFor="stock_minimo" value="Stock mínimo" />
                     <TextInput
                         id="stock_minimo"
-                        type="number"
-                        min="0"
-                        step="1"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
                         className="mt-1 block w-full"
                         value={data.stock_minimo}
-                        onChange={(e) => setData('stock_minimo', e.target.value)}
+                        onChange={(e) => setData('stock_minimo', soloDigitos(e.target.value, 5))}
+                        placeholder="0"
                     />
                     <InputError message={errors.stock_minimo} className="mt-2" />
                 </div>

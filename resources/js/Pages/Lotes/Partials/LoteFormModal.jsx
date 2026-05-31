@@ -7,6 +7,7 @@ import InputError from '@/Components/InputError';
 import SelectInput from '@/Components/SelectInput';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
+import { soloDigitos, soloDecimalPositivo } from '@/utils/inputs';
 
 /**
  * Modal de creación/edición de lote.
@@ -135,18 +136,22 @@ export default function LoteFormModal({ show, onClose, lote = null, productos, p
                     <InputError message={errors.fecha_vencimiento} className="mt-2" />
                 </div>
 
-                {/* Stock y Precio de compra en fila */}
+                {/* Stock y Precio de compra en fila.
+                    Se usa type=text + inputMode + filtro porque type=number en
+                    HTML acepta exponentes, signos negativos y scroll del mouse
+                    cambia el valor sin querer. La validación autoritativa vive
+                    en StoreLoteRequest/UpdateLoteRequest. */}
                 <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <InputLabel htmlFor="stock" value="Stock" />
                         <TextInput
                             id="stock"
-                            type="number"
-                            min="0"
-                            step="1"
+                            inputMode="numeric"
+                            pattern="[0-9]*"
                             className="mt-1 block w-full"
                             value={data.stock}
-                            onChange={(e) => setData('stock', e.target.value)}
+                            onChange={(e) => setData('stock', soloDigitos(e.target.value, 5))}
+                            placeholder="0"
                         />
                         <InputError message={errors.stock} className="mt-2" />
                     </div>
@@ -154,12 +159,12 @@ export default function LoteFormModal({ show, onClose, lote = null, productos, p
                         <InputLabel htmlFor="precio_compra" value="Precio de compra (S/)" />
                         <TextInput
                             id="precio_compra"
-                            type="number"
-                            min="0"
-                            step="0.01"
+                            inputMode="decimal"
+                            pattern="[0-9]*[.]?[0-9]*"
                             className="mt-1 block w-full"
                             value={data.precio_compra}
-                            onChange={(e) => setData('precio_compra', e.target.value)}
+                            onChange={(e) => setData('precio_compra', soloDecimalPositivo(e.target.value, 8, 2))}
+                            placeholder="0.00"
                         />
                         <InputError message={errors.precio_compra} className="mt-2" />
                     </div>

@@ -27,8 +27,8 @@ class UpdateProductoRequest extends FormRequest
             'categoria_id'  => ['required', 'integer', 'exists:categorias,id'],
             'laboratorio'   => ['nullable', 'string', 'max:255'],
             'unidad_medida' => ['required', 'string', 'max:50'],
-            'precio_venta'  => ['required', 'numeric', 'min:0'],
-            'stock_minimo'  => ['required', 'integer', 'min:0'],
+            'precio_venta'  => ['required', 'numeric', 'min:0', 'max:99999999.99'],
+            'stock_minimo'  => ['required', 'integer', 'min:0', 'max:99999'],
             'activo'        => ['boolean'],
         ];
     }

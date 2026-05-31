@@ -4,6 +4,7 @@ import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
+import { soloDigitos, telefonoLimpio } from '@/utils/inputs';
 
 export default function Edit({ empresa }) {
     const { data, setData, put, processing, errors } = useForm({
@@ -58,9 +59,7 @@ export default function Edit({ empresa }) {
                                 id="ruc"
                                 className="mt-1 block w-full dark:bg-gray-900 dark:text-gray-300"
                                 value={data.ruc}
-                                onChange={(e) =>
-                                    setData('ruc', e.target.value.replace(/\D/g, '').slice(0, 11))
-                                }
+                                onChange={(e) => setData('ruc', soloDigitos(e.target.value, 11))}
                                 maxLength={11}
                                 inputMode="numeric"
                                 pattern="[0-9]*"
@@ -90,9 +89,10 @@ export default function Edit({ empresa }) {
                                 id="telefono"
                                 className="mt-1 block w-full dark:bg-gray-900 dark:text-gray-300"
                                 value={data.telefono}
-                                onChange={(e) => setData('telefono', e.target.value)}
+                                onChange={(e) => setData('telefono', telefonoLimpio(e.target.value, 20))}
                                 autoComplete="tel"
                                 inputMode="tel"
+                                placeholder="+51 1 1234567"
                             />
                             <InputError message={errors.telefono} className="mt-2" />
                         </div>

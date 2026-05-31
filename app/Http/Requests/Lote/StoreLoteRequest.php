@@ -32,8 +32,10 @@ class StoreLoteRequest extends FormRequest
                 ),
             ],
             'fecha_vencimiento' => ['required', 'date', 'after_or_equal:today'],
-            'stock'             => ['required', 'integer', 'min:0'],
-            'precio_compra'     => ['required', 'numeric', 'min:0'],
+            // max:99999 alinea con SMALLINT/INT y evita overflow visual de stock.
+            'stock'             => ['required', 'integer', 'min:0', 'max:99999'],
+            // decimal(10,2) en la migración → tope efectivo 99,999,999.99.
+            'precio_compra'     => ['required', 'numeric', 'min:0', 'max:99999999.99'],
         ];
     }
 

@@ -34,8 +34,8 @@ class UpdateLoteRequest extends FormRequest
             ],
             // En edición se permite mantener una fecha pasada (corrección de lotes ya vencidos).
             'fecha_vencimiento' => ['required', 'date'],
-            'stock'             => ['required', 'integer', 'min:0'],
-            'precio_compra'     => ['required', 'numeric', 'min:0'],
+            'stock'             => ['required', 'integer', 'min:0', 'max:99999'],
+            'precio_compra'     => ['required', 'numeric', 'min:0', 'max:99999999.99'],
         ];
     }
 
