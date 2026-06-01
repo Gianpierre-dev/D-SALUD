@@ -8,22 +8,30 @@ use App\Models\RegistroAuditoria;
 use App\Support\CsvSafe;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
-use Maatwebsite\Excel\Concerns\FromQuery;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
 
-/**
- * Export del log de auditoría usando FromQuery + WithChunkReading: procesa
- * registros en lotes de 1000, manteniendo memoria constante incluso con
- * cientos de miles de filas (evita OOM bajo memory_limit reducido en Railway).
- */
-class AuditoriaExport implements FromQuery, WithChunkReading, WithHeadings, WithMapping
+class AuditoriaExport extends ReporteEjecutivoExport
 {
     public function __construct(
         private readonly ?Carbon $inicio = null,
         private readonly ?Carbon $fin = null,
     ) {
+    }
+
+    protected function tituloReporte(): string
+    {
+        return 'Registro de auditoría';
+    }
+
+    protected function subtituloReporte(): ?string
+    {
+        if ($this->inicio === null && $this->fin === null) {
+            return 'Histórico completo del sistema';
+        }
+
+        $desde = $this->inicio?->format('d/m/Y') ?? 'inicio';
+        $hasta = $this->fin?->format('d/m/Y')    ?? 'hoy';
+
+        return sprintf('Periodo: %s — %s', $desde, $hasta);
     }
 
     public function query(): Builder
@@ -33,11 +41,6 @@ class AuditoriaExport implements FromQuery, WithChunkReading, WithHeadings, With
             ->when($this->inicio, fn ($q, Carbon $i) => $q->where('created_at', '>=', $i->startOfDay()))
             ->when($this->fin, fn ($q, Carbon $f) => $q->where('created_at', '<=', $f->endOfDay()))
             ->orderByDesc('created_at');
-    }
-
-    public function chunkSize(): int
-    {
-        return 1000;
     }
 
     /**

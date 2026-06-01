@@ -8,17 +8,19 @@ use App\Models\Producto;
 use App\Support\CsvSafe;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
-use Maatwebsite\Excel\Concerns\FromQuery;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
 
-/**
- * Export de productos con stock total por debajo del mínimo configurado.
- * El cálculo de stock se hace en SQL (leftJoinSub) y se pagina en bloques de 1000.
- */
-class LotesStockBajoExport implements FromQuery, WithChunkReading, WithHeadings, WithMapping
+class LotesStockBajoExport extends ReporteEjecutivoExport
 {
+    protected function tituloReporte(): string
+    {
+        return 'Productos con stock bajo';
+    }
+
+    protected function subtituloReporte(): ?string
+    {
+        return 'Stock total igual o menor al mínimo configurado en cada producto';
+    }
+
     public function query(): Builder
     {
         $aggregate = DB::table('lotes')
@@ -32,11 +34,6 @@ class LotesStockBajoExport implements FromQuery, WithChunkReading, WithHeadings,
             ->selectRaw('COALESCE(agg.lotes_sum_stock, 0) as lotes_sum_stock')
             ->whereRaw('COALESCE(agg.lotes_sum_stock, 0) <= productos.stock_minimo')
             ->orderBy('productos.nombre');
-    }
-
-    public function chunkSize(): int
-    {
-        return 1000;
     }
 
     /**

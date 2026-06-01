@@ -8,21 +8,27 @@ use App\Models\Venta;
 use App\Support\CsvSafe;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
-use Maatwebsite\Excel\Concerns\FromQuery;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
 
-/**
- * Export de ventas con FromQuery + WithChunkReading: escalable a períodos
- * largos sin cargar todas las ventas en memoria.
- */
-class VentasPorPeriodoExport implements FromQuery, WithChunkReading, WithHeadings, WithMapping
+class VentasPorPeriodoExport extends ReporteEjecutivoExport
 {
     public function __construct(
         private readonly Carbon $inicio,
         private readonly Carbon $fin,
     ) {
+    }
+
+    protected function tituloReporte(): string
+    {
+        return 'Reporte de ventas por período';
+    }
+
+    protected function subtituloReporte(): ?string
+    {
+        return sprintf(
+            'Periodo: %s — %s',
+            $this->inicio->format('d/m/Y'),
+            $this->fin->format('d/m/Y'),
+        );
     }
 
     public function query(): Builder
@@ -32,11 +38,6 @@ class VentasPorPeriodoExport implements FromQuery, WithChunkReading, WithHeading
             ->where('estado', Venta::ESTADO_COMPLETADA)
             ->whereBetween('created_at', [$this->inicio->startOfDay(), $this->fin->endOfDay()])
             ->orderBy('created_at');
-    }
-
-    public function chunkSize(): int
-    {
-        return 1000;
     }
 
     /**

@@ -8,20 +8,21 @@ use App\Models\Lote;
 use App\Support\CsvSafe;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
-use Maatwebsite\Excel\Concerns\FromQuery;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
 
-/**
- * Export de lotes próximos a vencer con FromQuery + WithChunkReading: itera la
- * tabla `lotes` en bloques de 1000 y mantiene memoria constante incluso con
- * inventarios de cientos de miles de lotes.
- */
-class ProductosPorVencerExport implements FromQuery, WithChunkReading, WithHeadings, WithMapping
+class ProductosPorVencerExport extends ReporteEjecutivoExport
 {
     public function __construct(private readonly Carbon $limite)
     {
+    }
+
+    protected function tituloReporte(): string
+    {
+        return 'Productos próximos a vencer';
+    }
+
+    protected function subtituloReporte(): ?string
+    {
+        return 'Lotes con stock disponible y vencimiento hasta el ' . $this->limite->format('d/m/Y');
     }
 
     public function query(): Builder
@@ -31,11 +32,6 @@ class ProductosPorVencerExport implements FromQuery, WithChunkReading, WithHeadi
             ->where('stock', '>', 0)
             ->where('fecha_vencimiento', '<=', $this->limite)
             ->orderBy('fecha_vencimiento');
-    }
-
-    public function chunkSize(): int
-    {
-        return 1000;
     }
 
     /**

@@ -5,28 +5,36 @@ declare(strict_types=1);
 namespace App\Exports;
 
 use App\Models\MovimientoInventario;
+use App\Models\Producto;
 use App\Support\CsvSafe;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
-use Maatwebsite\Excel\Concerns\FromQuery;
-use Maatwebsite\Excel\Concerns\WithChunkReading;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithMapping;
 
-/**
- * Export Kardex por producto: lista cronológica de todos los movimientos
- * (ENTRADAS y SALIDAS) con stock_anterior y stock_posterior visibles.
- *
- * FromQuery + WithChunkReading mantienen memoria constante incluso con
- * cientos de miles de filas — mismo patrón que VentasPorPeriodoExport.
- */
-class KardexExport implements FromQuery, WithChunkReading, WithHeadings, WithMapping
+class KardexExport extends ReporteEjecutivoExport
 {
     public function __construct(
         private readonly int $productoId,
         private readonly Carbon $inicio,
         private readonly Carbon $fin,
     ) {
+    }
+
+    protected function tituloReporte(): string
+    {
+        return 'Kardex por producto';
+    }
+
+    protected function subtituloReporte(): ?string
+    {
+        $producto = Producto::query()->find($this->productoId);
+        $nombre   = $producto?->nombre ?? "Producto #{$this->productoId}";
+
+        return sprintf(
+            '%s · Periodo: %s — %s',
+            $nombre,
+            $this->inicio->format('d/m/Y'),
+            $this->fin->format('d/m/Y'),
+        );
     }
 
     public function query(): Builder
@@ -36,11 +44,6 @@ class KardexExport implements FromQuery, WithChunkReading, WithHeadings, WithMap
             ->where('producto_id', $this->productoId)
             ->whereBetween('created_at', [$this->inicio->startOfDay(), $this->fin->endOfDay()])
             ->orderBy('created_at');
-    }
-
-    public function chunkSize(): int
-    {
-        return 1000;
     }
 
     /**
