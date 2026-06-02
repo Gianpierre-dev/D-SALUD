@@ -8,6 +8,7 @@ use App\Enums\EstadoCaja;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Caja extends Model
 {
@@ -58,6 +59,16 @@ class Caja extends Model
     public function cerradaPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'cerrada_por');
+    }
+
+    public function ventas(): HasMany
+    {
+        return $this->hasMany(Venta::class);
+    }
+
+    public function movimientos(): HasMany
+    {
+        return $this->hasMany(MovimientoCaja::class);
     }
 
     public function scopeAbierta($query)

@@ -99,17 +99,23 @@ class CajaTest extends TestCase
         $producto = Producto::factory()->create(['precio_venta' => 25.00, 'activo' => true]);
         Lote::factory()->vigente()->conStock(20)->create(['producto_id' => $producto->id]);
 
-        // 2 ventas de 25 c/u = S/ 50
+        // 2 ventas de 25 c/u = S/ 50, ambas en EFECTIVO (pagos vacío = efectivo).
         $this->ventaServicio->registrar(
             [['producto_id' => $producto->id, 'cantidad' => 1]],
             $this->vendedor->id,
+            null,
+            [],
+            $caja->id,
         );
         $this->ventaServicio->registrar(
             [['producto_id' => $producto->id, 'cantidad' => 1]],
             $this->vendedor->id,
+            null,
+            [],
+            $caja->id,
         );
 
-        // Esperado = 100 + 50 = 150. Si cuenta 150, diferencia = 0.
+        // Efectivo esperado = 100 + 50 = 150. Si cuenta 150, diferencia = 0.
         $cerrada = $this->servicio->cerrar($caja->fresh(), 150.00, $this->vendedor->id);
 
         $this->assertSame(EstadoCaja::CERRADA, $cerrada->estado);
@@ -154,6 +160,9 @@ class CajaTest extends TestCase
         $venta = $this->ventaServicio->registrar(
             [['producto_id' => $producto->id, 'cantidad' => 1]],
             $this->vendedor->id,
+            null,
+            [],
+            $caja->id,
         );
 
         // Anular la única venta: la venta NO debe contar en el total del turno.
@@ -257,10 +266,14 @@ class CajaTest extends TestCase
         $producto = Producto::factory()->create(['precio_venta' => 10.00, 'activo' => true]);
         Lote::factory()->vigente()->conStock(10)->create(['producto_id' => $producto->id]);
 
-        // Sin caja abierta: el POST debe redirigir con error.
+        // Sin caja abierta: el POST debe redirigir con error (pagos válidos
+        // para superar la validación y llegar al bloqueo por caja).
         $response = $this->post(route('ventas.store'), [
             'items' => [
                 ['producto_id' => $producto->id, 'cantidad' => 1],
+            ],
+            'pagos' => [
+                ['medio_pago' => 'EFECTIVO', 'monto' => 10.00],
             ],
         ]);
 
@@ -282,10 +295,24 @@ class CajaTest extends TestCase
             'items' => [
                 ['producto_id' => $producto->id, 'cantidad' => 1],
             ],
+            'pagos' => [
+                ['medio_pago' => 'EFECTIVO', 'monto' => 10.00],
+            ],
+            'monto_recibido' => 20.00,
         ]);
 
         $response->assertRedirect();
         $response->assertSessionHasNoErrors();
         $this->assertDatabaseCount('ventas', 1);
+
+        // La venta quedó vinculada a la caja del turno y con vuelto calculado.
+        $venta = \App\Models\Venta::first();
+        $this->assertNotNull($venta->caja_id);
+        $this->assertSame('10.00', (string) $venta->vuelto); // 20 recibido - 10 total
+        $this->assertDatabaseHas('pagos', [
+            'venta_id'   => $venta->id,
+            'medio_pago' => 'EFECTIVO',
+            'monto'      => '10.00',
+        ]);
     }
 }

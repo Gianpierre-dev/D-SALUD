@@ -22,7 +22,10 @@ class Venta extends Model
     protected $fillable = [
         'user_id',
         'cliente_id',
+        'caja_id',
         'total',
+        'monto_recibido',
+        'vuelto',
         'estado',
         'motivo_anulacion',
         'anulada_por',
@@ -31,6 +34,8 @@ class Venta extends Model
 
     protected $casts = [
         'total' => 'decimal:2',
+        'monto_recibido' => 'decimal:2',
+        'vuelto' => 'decimal:2',
         'anulada_en' => 'datetime',
     ];
 
@@ -42,6 +47,16 @@ class Venta extends Model
     public function cliente(): BelongsTo
     {
         return $this->belongsTo(Cliente::class);
+    }
+
+    public function caja(): BelongsTo
+    {
+        return $this->belongsTo(Caja::class);
+    }
+
+    public function pagos(): HasMany
+    {
+        return $this->hasMany(Pago::class);
     }
 
     public function anuladaPor(): BelongsTo

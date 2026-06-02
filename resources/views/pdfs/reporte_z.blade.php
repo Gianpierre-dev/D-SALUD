@@ -80,14 +80,37 @@
         </tr>
     </table>
 
+    <p class="seccion">Ventas por medio de pago</p>
+    <table class="bloque">
+        @php $hayDesglose = false; @endphp
+        @foreach (($desglosePorMedio ?? []) as $fila)
+            @if ((float) $fila['total'] > 0)
+                @php $hayDesglose = true; @endphp
+                <tr>
+                    <th>{{ $fila['label'] }}</th>
+                    <td>S/ {{ number_format((float) $fila['total'], 2) }}</td>
+                </tr>
+            @endif
+        @endforeach
+        @unless ($hayDesglose)
+            <tr><th>Sin ventas en el turno</th><td>S/ 0.00</td></tr>
+        @endunless
+    </table>
+
     <p class="seccion">Movimiento del turno</p>
     <table class="bloque">
         <tr>
-            <th>Total ventas COMPLETADAS</th>
+            <th>Total ventas COMPLETADAS (todos los medios)</th>
             <td>S/ {{ number_format((float) $caja->total_ventas, 2) }}</td>
         </tr>
+        @foreach (($caja->movimientos ?? []) as $mov)
+            <tr>
+                <th>{{ $mov->tipo->value === 'INGRESO' ? 'Ingreso' : 'Egreso' }}: {{ $mov->concepto }}</th>
+                <td>{{ $mov->tipo->value === 'INGRESO' ? '+' : '−' }} S/ {{ number_format((float) $mov->monto, 2) }}</td>
+            </tr>
+        @endforeach
         <tr>
-            <th>Total esperado en caja (apertura + ventas)</th>
+            <th>Efectivo esperado en gaveta (apertura + efectivo + ingresos − egresos)</th>
             <td>S/ {{ number_format((float) $caja->total_esperado, 2) }}</td>
         </tr>
     </table>

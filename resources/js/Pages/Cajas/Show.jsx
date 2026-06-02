@@ -4,6 +4,9 @@ import {
     IconArrowLeft,
     IconCashRegister,
     IconDownload,
+    IconPlus,
+    IconArrowDown,
+    IconArrowUp,
 } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Badge from '@/Components/Badge';
@@ -11,19 +14,20 @@ import Can from '@/Components/Can';
 import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import CerrarCajaModal from './Partials/CerrarCajaModal';
+import MovimientoCajaModal from './Partials/MovimientoCajaModal';
 import { formatearMoneda } from '@/utils/format';
 
-export default function Show({ caja }) {
+export default function Show({ caja, desglosePorMedio = [], tiposMovimiento = [] }) {
     const [cerrarAbierto, setCerrarAbierto] = useState(false);
+    const [movAbierto, setMovAbierto] = useState(false);
 
-    const formatFecha = (fecha) =>
+    const formatFecha = (fecha, conHora = true) =>
         fecha
             ? new Date(fecha).toLocaleDateString('es-PE', {
                   day: '2-digit',
                   month: '2-digit',
                   year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
+                  ...(conHora ? { hour: '2-digit', minute: '2-digit' } : {}),
               })
             : '—';
 
@@ -31,13 +35,15 @@ export default function Show({ caja }) {
     const diferencia  = caja.diferencia !== null ? Number(caja.diferencia) : null;
 
     const colorDiferencia =
-        diferencia === null
-            ? 'text-gray-700 dark:text-gray-300'
-            : diferencia === 0
+        diferencia === null || diferencia === 0
             ? 'text-gray-700 dark:text-gray-300'
             : diferencia > 0
             ? 'text-emerald-600'
             : 'text-red-600';
+
+    // Solo medios con monto > 0 para no llenar de ceros.
+    const desgloseConMonto = desglosePorMedio.filter((d) => Number(d.total) > 0);
+    const movimientos = caja.movimientos ?? [];
 
     return (
         <AuthenticatedLayout
@@ -46,7 +52,7 @@ export default function Show({ caja }) {
                     <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
                         Caja #{caja.id}
                     </h2>
-                    <Badge variant={estaAbierta ? 'warning' : 'success'}>{caja.estado}</Badge>
+                    <Badge variant={estaAbierta ? 'success' : 'neutral'}>{caja.estado}</Badge>
                 </div>
             }
         >
@@ -63,12 +69,20 @@ export default function Show({ caja }) {
                     </Link>
 
                     {estaAbierta && (
-                        <Can permission="cajas.close">
-                            <PrimaryButton type="button" onClick={() => setCerrarAbierto(true)}>
-                                <IconCashRegister className="me-1 h-4 w-4" />
-                                Cerrar caja
-                            </PrimaryButton>
-                        </Can>
+                        <>
+                            <Can permission="cajas.create">
+                                <SecondaryButton type="button" onClick={() => setMovAbierto(true)}>
+                                    <IconPlus className="me-1 h-4 w-4" />
+                                    Movimiento de efectivo
+                                </SecondaryButton>
+                            </Can>
+                            <Can permission="cajas.close">
+                                <PrimaryButton type="button" onClick={() => setCerrarAbierto(true)}>
+                                    <IconCashRegister className="me-1 h-4 w-4" />
+                                    Cerrar caja
+                                </PrimaryButton>
+                            </Can>
+                        </>
                     )}
 
                     {!estaAbierta && (
@@ -81,7 +95,7 @@ export default function Show({ caja }) {
                     )}
                 </div>
 
-                {/* Datos generales */}
+                {/* Apertura */}
                 <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
                     <h3 className="mb-3 text-base font-semibold text-gray-800 dark:text-gray-100">
                         Apertura
@@ -108,6 +122,61 @@ export default function Show({ caja }) {
                     </dl>
                 </div>
 
+                {/* Desglose por medio de pago */}
+                {desgloseConMonto.length > 0 && (
+                    <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+                        <h3 className="mb-3 text-base font-semibold text-gray-800 dark:text-gray-100">
+                            Ventas por medio de pago
+                        </h3>
+                        <dl className="space-y-2 text-sm">
+                            {desgloseConMonto.map((d) => (
+                                <div key={d.medio} className="flex items-center justify-between">
+                                    <dt className="text-gray-600 dark:text-gray-400">{d.label}</dt>
+                                    <dd className="font-medium text-gray-800 dark:text-gray-100">
+                                        {formatearMoneda(d.total)}
+                                    </dd>
+                                </div>
+                            ))}
+                        </dl>
+                    </div>
+                )}
+
+                {/* Movimientos de efectivo */}
+                {movimientos.length > 0 && (
+                    <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
+                        <h3 className="mb-3 text-base font-semibold text-gray-800 dark:text-gray-100">
+                            Movimientos de efectivo
+                        </h3>
+                        <div className="space-y-2 text-sm">
+                            {movimientos.map((m) => (
+                                <div
+                                    key={m.id}
+                                    className="flex items-center justify-between border-b border-gray-100 pb-2 dark:border-gray-700/50"
+                                >
+                                    <div className="flex items-center gap-2">
+                                        {m.tipo === 'INGRESO' ? (
+                                            <IconArrowDown className="h-4 w-4 text-emerald-600" />
+                                        ) : (
+                                            <IconArrowUp className="h-4 w-4 text-red-600" />
+                                        )}
+                                        <span className="text-gray-700 dark:text-gray-300">
+                                            {m.concepto}
+                                        </span>
+                                    </div>
+                                    <span
+                                        className={
+                                            m.tipo === 'INGRESO' ? 'text-emerald-600' : 'text-red-600'
+                                        }
+                                    >
+                                        {m.tipo === 'INGRESO' ? '+' : '−'}
+                                        {formatearMoneda(m.monto)}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
                 {/* Cierre */}
                 <div className="rounded-lg border border-gray-200 bg-white p-6 dark:border-gray-700 dark:bg-gray-800">
                     <h3 className="mb-3 text-base font-semibold text-gray-800 dark:text-gray-100">
@@ -117,7 +186,7 @@ export default function Show({ caja }) {
                     {estaAbierta ? (
                         <p className="text-sm text-gray-500 dark:text-gray-400">
                             La caja sigue abierta. Cuando termines el turno, click en
-                            <strong> Cerrar caja</strong> para registrar el cuadre.
+                            <strong> Cerrar caja</strong> para registrar el cuadre del efectivo.
                         </p>
                     ) : (
                         <dl className="grid grid-cols-1 gap-3 text-sm sm:grid-cols-2">
@@ -134,19 +203,19 @@ export default function Show({ caja }) {
                                 </dd>
                             </div>
                             <div>
-                                <dt className="text-gray-500 dark:text-gray-400">Total ventas del turno</dt>
+                                <dt className="text-gray-500 dark:text-gray-400">Total ventas (todos los medios)</dt>
                                 <dd className="font-medium text-gray-800 dark:text-gray-100">
                                     {formatearMoneda(caja.total_ventas)}
                                 </dd>
                             </div>
                             <div>
-                                <dt className="text-gray-500 dark:text-gray-400">Total esperado</dt>
+                                <dt className="text-gray-500 dark:text-gray-400">Efectivo esperado en gaveta</dt>
                                 <dd className="font-medium text-gray-800 dark:text-gray-100">
                                     {formatearMoneda(caja.total_esperado)}
                                 </dd>
                             </div>
                             <div>
-                                <dt className="text-gray-500 dark:text-gray-400">Monto contado</dt>
+                                <dt className="text-gray-500 dark:text-gray-400">Efectivo contado</dt>
                                 <dd className="font-medium text-gray-800 dark:text-gray-100">
                                     {formatearMoneda(caja.monto_cierre)}
                                 </dd>
@@ -177,11 +246,19 @@ export default function Show({ caja }) {
             </div>
 
             {estaAbierta && (
-                <CerrarCajaModal
-                    show={cerrarAbierto}
-                    onClose={() => setCerrarAbierto(false)}
-                    caja={caja}
-                />
+                <>
+                    <CerrarCajaModal
+                        show={cerrarAbierto}
+                        onClose={() => setCerrarAbierto(false)}
+                        caja={caja}
+                    />
+                    <MovimientoCajaModal
+                        show={movAbierto}
+                        onClose={() => setMovAbierto(false)}
+                        caja={caja}
+                        tipos={tiposMovimiento}
+                    />
+                </>
             )}
         </AuthenticatedLayout>
     );

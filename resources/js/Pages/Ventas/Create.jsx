@@ -6,6 +6,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SelectInput from '@/Components/SelectInput';
 import InputLabel from '@/Components/InputLabel';
 import CarritoItem from './Partials/CarritoItem';
+import CobrarModal from './Partials/CobrarModal';
 import { formatearMoneda } from '@/utils/format';
 
 /**
@@ -33,6 +34,7 @@ export default function Create({ productos, clientes = [], cajaAbierta = null })
     const [carrito, setCarrito] = useState([]);
     const [clienteId, setClienteId] = useState('');
     const [procesando, setProcesando] = useState(false);
+    const [cobrarAbierto, setCobrarAbierto] = useState(false);
     const idempotencyKeyRef = useRef(generarIdempotencyKey());
 
     // Sin caja abierta el POS está bloqueado. El backend ya rechaza el POST,
@@ -144,7 +146,8 @@ export default function Create({ productos, clientes = [], cajaAbierta = null })
 
     // ---------- Envío ----------
 
-    const registrarVenta = () => {
+    // El cobro recibe el desglose de pago desde el modal y dispara el POST.
+    const registrarVenta = (pagos, montoRecibido) => {
         if (carrito.length === 0 || procesando) return;
         setProcesando(true);
         router.post(
@@ -152,16 +155,20 @@ export default function Create({ productos, clientes = [], cajaAbierta = null })
             {
                 cliente_id: clienteId ? Number(clienteId) : null,
                 items: carrito.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })),
+                pagos,
+                monto_recibido: montoRecibido,
             },
             {
                 headers: { 'Idempotency-Key': idempotencyKeyRef.current },
                 onSuccess: () => {
                     setCarrito([]);
                     setClienteId('');
+                    setCobrarAbierto(false);
                     // Tras un éxito real, rotamos la key para la próxima venta.
                     idempotencyKeyRef.current = generarIdempotencyKey();
                 },
                 onError: () => {
+                    setCobrarAbierto(false);
                     // Refresca stock_total tras un error de negocio (stock
                     // insuficiente, producto inactivo, etc.) para no insistir
                     // sobre datos viejos del carrito.
@@ -308,15 +315,23 @@ export default function Create({ productos, clientes = [], cajaAbierta = null })
                                 <PrimaryButton
                                     className="w-full justify-center"
                                     disabled={carrito.length === 0 || procesando}
-                                    onClick={registrarVenta}
+                                    onClick={() => setCobrarAbierto(true)}
                                 >
-                                    {procesando ? 'Registrando...' : 'Registrar venta'}
+                                    {procesando ? 'Registrando...' : 'Cobrar'}
                                 </PrimaryButton>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <CobrarModal
+                show={cobrarAbierto}
+                onClose={() => setCobrarAbierto(false)}
+                total={totalCarrito}
+                procesando={procesando}
+                onConfirmar={registrarVenta}
+            />
         </AuthenticatedLayout>
     );
 }

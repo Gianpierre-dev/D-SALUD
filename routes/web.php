@@ -192,6 +192,8 @@ Route::middleware('auth')->group(function () {
         ->name('cajas.store')->middleware('permission:cajas.create');
     Route::get('cajas/{caja}', [CajaController::class, 'show'])
         ->name('cajas.show')->middleware('permission:cajas.read');
+    Route::post('cajas/{caja}/movimiento', [CajaController::class, 'movimiento'])
+        ->name('cajas.movimiento')->middleware('permission:cajas.create');
     Route::put('cajas/{caja}/cerrar', [CajaController::class, 'close'])
         ->name('cajas.close')->middleware('permission:cajas.close');
     Route::get('cajas/{caja}/reporte-z.pdf', [CajaController::class, 'reporteZ'])

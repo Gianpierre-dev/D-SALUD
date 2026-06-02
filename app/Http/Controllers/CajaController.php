@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use App\Enums\EstadoCaja;
+use App\Enums\MedioPago;
 use App\Enums\Rol;
+use App\Enums\TipoMovimientoCaja;
 use App\Http\Requests\Caja\AbrirCajaRequest;
 use App\Http\Requests\Caja\CerrarCajaRequest;
+use App\Http\Requests\Caja\MovimientoCajaRequest;
 use App\Models\Caja;
 use App\Services\CajaService;
 use App\Services\EmpresaService;
@@ -48,10 +51,19 @@ class CajaController extends Controller
     {
         $this->autorizar($request, $caja);
 
-        $caja->load(['cajero:id,name', 'cerradaPor:id,name']);
+        $caja->load([
+            'cajero:id,name',
+            'cerradaPor:id,name',
+            'movimientos.usuario:id,name',
+        ]);
 
         return Inertia::render('Cajas/Show', [
-            'caja' => $caja,
+            'caja'             => $caja,
+            'desglosePorMedio' => $this->desgloseConEtiquetas($caja),
+            'tiposMovimiento'  => array_map(
+                static fn (TipoMovimientoCaja $t) => ['value' => $t->value, 'label' => $t->etiqueta()],
+                TipoMovimientoCaja::cases(),
+            ),
         ]);
     }
 
@@ -73,6 +85,29 @@ class CajaController extends Controller
         return redirect()
             ->route('cajas.show', $caja)
             ->with('success', 'Caja abierta. Ya puedes registrar ventas.');
+    }
+
+    /**
+     * Registra un movimiento de efectivo (ingreso/egreso) en la caja abierta.
+     */
+    public function movimiento(MovimientoCajaRequest $request, Caja $caja): RedirectResponse
+    {
+        $this->autorizar($request, $caja);
+
+        try {
+            $datos = $request->validated();
+            $this->service->registrarMovimiento(
+                $caja,
+                TipoMovimientoCaja::from($datos['tipo']),
+                (float) $datos['monto'],
+                $datos['concepto'],
+                $request->user()->id,
+            );
+        } catch (\RuntimeException $e) {
+            return back()->with('error', $e->getMessage());
+        }
+
+        return back()->with('success', 'Movimiento de caja registrado.');
     }
 
     /**
@@ -109,15 +144,36 @@ class CajaController extends Controller
             abort(409, 'La caja debe estar cerrada para generar el reporte Z.');
         }
 
-        $caja->load(['cajero:id,name', 'cerradaPor:id,name']);
+        $caja->load(['cajero:id,name', 'cerradaPor:id,name', 'movimientos.usuario:id,name']);
 
         $pdf = Pdf::loadView('pdfs.reporte_z', [
-            'caja'     => $caja,
-            'empresa'  => $this->empresa->obtener(),
-            'logoPath' => public_path('logo.png'),
+            'caja'             => $caja,
+            'empresa'          => $this->empresa->obtener(),
+            'logoPath'         => public_path('logo.png'),
+            'desglosePorMedio' => $this->desgloseConEtiquetas($caja),
         ])->setPaper('a4', 'portrait');
 
         return $pdf->download("reporte_z_caja_{$caja->id}.pdf");
+    }
+
+    /**
+     * Desglose por medio con etiquetas legibles para la UI/PDF.
+     *
+     * @return array<int, array{medio: string, label: string, total: float}>
+     */
+    private function desgloseConEtiquetas(Caja $caja): array
+    {
+        $desglose = $this->service->desglosePorMedio($caja);
+
+        return array_map(
+            static fn (string $medio, float $total) => [
+                'medio' => $medio,
+                'label' => MedioPago::from($medio)->etiqueta(),
+                'total' => $total,
+            ],
+            array_keys($desglose),
+            array_values($desglose),
+        );
     }
 
     /**

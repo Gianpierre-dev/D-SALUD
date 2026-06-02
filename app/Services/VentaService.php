@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\MedioPago;
 use App\Enums\MotivoMovimiento;
 use App\Models\Boleta;
 use App\Models\DetalleVenta;
 use App\Models\Lote;
+use App\Models\Pago;
 use App\Models\Producto;
 use App\Models\User;
 use App\Models\Venta;
@@ -41,15 +43,27 @@ class VentaService
      * la transacción hace rollback automático.
      *
      * @param  array<int, array{producto_id: int, cantidad: int}>  $items
-     * @param  int|null  $clienteId  Cliente vinculado a la venta (null = consumidor final).
-     * @throws \RuntimeException  Cuando el stock de un producto es insuficiente.
+     * @param  int|null  $clienteId      Cliente vinculado (null = consumidor final).
+     * @param  array<int, array{medio_pago: string, monto: float|string}>  $pagos
+     *         Desglose de pago. Si viene vacío, se asume un único pago EFECTIVO
+     *         por el total (comportamiento legacy seguro para tests de dominio).
+     * @param  int|null   $cajaId        Caja del turno (vínculo directo para el cuadre).
+     * @param  float|null $montoRecibido Efectivo entregado por el cliente (para vuelto).
+     * @throws \RuntimeException  Stock insuficiente o pagos que no cubren el total.
      */
-    public function registrar(array $items, int $userId, ?int $clienteId = null): Venta
-    {
-        return DB::transaction(function () use ($items, $userId, $clienteId): Venta {
+    public function registrar(
+        array $items,
+        int $userId,
+        ?int $clienteId = null,
+        array $pagos = [],
+        ?int $cajaId = null,
+        ?float $montoRecibido = null,
+    ): Venta {
+        return DB::transaction(function () use ($items, $userId, $clienteId, $pagos, $cajaId, $montoRecibido): Venta {
             $venta = Venta::create([
                 'user_id'    => $userId,
                 'cliente_id' => $clienteId,
+                'caja_id'    => $cajaId,
                 'total'      => 0,
                 'estado'     => Venta::ESTADO_COMPLETADA,
             ]);
@@ -60,6 +74,9 @@ class VentaService
             }
 
             $venta->total = $total;
+
+            $this->registrarPagos($venta, $total, $pagos, $montoRecibido);
+
             $venta->save();
 
             $boleta = $this->generarBoletaCorrelativa($venta);
@@ -70,8 +87,64 @@ class VentaService
                 "Venta #{$venta->id} - Boleta {$boleta->numero_formateado} - Total S/ {$venta->total}"
             );
 
-            return $venta->load('detalles.producto', 'boleta', 'cliente');
+            return $venta->load('detalles.producto', 'boleta', 'cliente', 'pagos');
         });
+    }
+
+    /**
+     * Persiste el desglose de pago y calcula el vuelto del efectivo.
+     *
+     * Reglas:
+     *  - La suma de los montos aplicados debe igualar el total (tolerancia 1 céntimo).
+     *  - Si no se envían pagos, se crea un único pago EFECTIVO por el total.
+     *  - El vuelto solo aplica al componente efectivo: si el cliente entregó
+     *    más efectivo del aplicado, la diferencia es el vuelto.
+     *
+     * @param  array<int, array{medio_pago: string, monto: float|string}>  $pagos
+     * @throws \RuntimeException  Si la suma de pagos no cubre el total.
+     */
+    private function registrarPagos(Venta $venta, float $total, array $pagos, ?float $montoRecibido): void
+    {
+        // Legacy / consumidor final sin desglose: todo efectivo.
+        if ($pagos === []) {
+            $pagos = [['medio_pago' => MedioPago::EFECTIVO->value, 'monto' => $total]];
+        }
+
+        $sumaPagos     = 0.0;
+        $montoEfectivo = 0.0;
+
+        foreach ($pagos as $pago) {
+            $monto = round((float) $pago['monto'], 2);
+            if ($monto <= 0) {
+                throw new \RuntimeException('El monto de cada pago debe ser mayor a 0.');
+            }
+
+            $medio = MedioPago::from($pago['medio_pago']);
+            $sumaPagos += $monto;
+            if ($medio->esEfectivo()) {
+                $montoEfectivo += $monto;
+            }
+
+            Pago::create([
+                'venta_id'   => $venta->id,
+                'medio_pago' => $medio,
+                'monto'      => $monto,
+            ]);
+        }
+
+        // La suma de pagos debe cubrir exactamente el total (tolerancia centavo
+        // por redondeo de float).
+        if (abs($sumaPagos - round($total, 2)) > 0.01) {
+            throw new \RuntimeException(
+                sprintf('Los pagos (S/ %.2f) no coinciden con el total de la venta (S/ %.2f).', $sumaPagos, $total),
+            );
+        }
+
+        // Vuelto: solo si hubo efectivo y el cliente entregó más de lo aplicado.
+        if ($montoRecibido !== null && $montoEfectivo > 0) {
+            $venta->monto_recibido = round($montoRecibido, 2);
+            $venta->vuelto = max(0, round($montoRecibido - $montoEfectivo, 2));
+        }
     }
 
     /**

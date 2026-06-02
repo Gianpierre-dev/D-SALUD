@@ -61,7 +61,8 @@ class VentaController extends Controller
         // Bloqueo POS: sin caja abierta no se puede vender. El frontend muestra
         // CTA pero el backend es autoritativo (cualquier request con curl/Postman
         // sería rechazada acá igual).
-        if ($this->cajas->cajaAbiertaDe($userId) === null) {
+        $caja = $this->cajas->cajaAbiertaDe($userId);
+        if ($caja === null) {
             return back()->with(
                 'error',
                 'No tienes una caja abierta. Abre una caja antes de registrar ventas.',
@@ -85,11 +86,17 @@ class VentaController extends Controller
         try {
             $validated = $request->validated();
             $clienteId = isset($validated['cliente_id']) ? (int) $validated['cliente_id'] : null;
+            $montoRecibido = isset($validated['monto_recibido'])
+                ? (float) $validated['monto_recibido']
+                : null;
 
             $venta = $this->service->registrar(
                 $validated['items'],
                 $userId,
                 $clienteId,
+                $validated['pagos'],
+                $caja->id,
+                $montoRecibido,
             );
 
             if ($idempotencyKey !== null) {
