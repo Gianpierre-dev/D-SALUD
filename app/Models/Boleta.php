@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\TipoComprobante;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -16,12 +17,14 @@ class Boleta extends Model
 
     protected $fillable = [
         'venta_id',
+        'tipo_comprobante',
         'serie',
         'numero',
         'fecha_emision',
     ];
 
     protected $casts = [
+        'tipo_comprobante' => TipoComprobante::class,
         'numero' => 'integer',
         'fecha_emision' => 'datetime',
     ];

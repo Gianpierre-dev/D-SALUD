@@ -29,6 +29,7 @@ class UpdateProductoRequest extends FormRequest
             'unidad_medida' => ['required', 'string', 'max:50'],
             'precio_venta'  => ['required', 'numeric', 'min:0', 'max:99999999.99'],
             'stock_minimo'  => ['required', 'integer', 'min:0', 'max:99999'],
+            'afecto_igv'    => ['boolean'],
             'activo'        => ['boolean'],
         ];
     }

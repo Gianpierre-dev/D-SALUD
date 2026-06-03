@@ -146,14 +146,16 @@ export default function Create({ productos, clientes = [], cajaAbierta = null })
 
     // ---------- Envío ----------
 
-    // El cobro recibe el desglose de pago desde el modal y dispara el POST.
-    const registrarVenta = (pagos, montoRecibido) => {
+    // El cobro recibe el desglose de pago y el tipo de comprobante desde el
+    // modal y dispara el POST.
+    const registrarVenta = (pagos, montoRecibido, tipoComprobante) => {
         if (carrito.length === 0 || procesando) return;
         setProcesando(true);
         router.post(
             route('ventas.store'),
             {
                 cliente_id: clienteId ? Number(clienteId) : null,
+                tipo_comprobante: tipoComprobante,
                 items: carrito.map(({ producto_id, cantidad }) => ({ producto_id, cantidad })),
                 pagos,
                 monto_recibido: montoRecibido,
@@ -331,6 +333,11 @@ export default function Create({ productos, clientes = [], cajaAbierta = null })
                 total={totalCarrito}
                 procesando={procesando}
                 onConfirmar={registrarVenta}
+                clienteEsRuc={
+                    clienteId
+                        ? clientes.find((c) => String(c.id) === String(clienteId))?.tipo_documento === 'RUC'
+                        : false
+                }
             />
         </AuthenticatedLayout>
     );

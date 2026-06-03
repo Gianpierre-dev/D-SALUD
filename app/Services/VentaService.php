@@ -6,7 +6,9 @@ namespace App\Services;
 
 use App\Enums\MedioPago;
 use App\Enums\MotivoMovimiento;
+use App\Enums\TipoComprobante;
 use App\Models\Boleta;
+use App\Models\Cliente;
 use App\Models\DetalleVenta;
 use App\Models\Lote;
 use App\Models\Pago;
@@ -49,7 +51,9 @@ class VentaService
      *         por el total (comportamiento legacy seguro para tests de dominio).
      * @param  int|null   $cajaId        Caja del turno (vínculo directo para el cuadre).
      * @param  float|null $montoRecibido Efectivo entregado por el cliente (para vuelto).
-     * @throws \RuntimeException  Stock insuficiente o pagos que no cubren el total.
+     * @param  string|null $tipoComprobante  BOLETA (default) o FACTURA (exige RUC).
+     * @throws \RuntimeException  Stock insuficiente, pagos que no cubren el total
+     *                            o factura sin RUC de cliente.
      */
     public function registrar(
         array $items,
@@ -58,8 +62,16 @@ class VentaService
         array $pagos = [],
         ?int $cajaId = null,
         ?float $montoRecibido = null,
+        ?string $tipoComprobante = null,
     ): Venta {
-        return DB::transaction(function () use ($items, $userId, $clienteId, $pagos, $cajaId, $montoRecibido): Venta {
+        $tipo = $tipoComprobante !== null
+            ? TipoComprobante::from($tipoComprobante)
+            : TipoComprobante::BOLETA;
+
+        // Una factura exige cliente con RUC: validar ANTES de tocar stock.
+        $this->validarComprobante($tipo, $clienteId);
+
+        return DB::transaction(function () use ($items, $userId, $clienteId, $pagos, $cajaId, $montoRecibido, $tipo): Venta {
             $venta = Venta::create([
                 'user_id'    => $userId,
                 'cliente_id' => $clienteId,
@@ -69,26 +81,57 @@ class VentaService
             ]);
 
             $total = 0.0;
+            $montoGravadoConIgv = 0.0; // porción afecta a IGV (precio ya incluye IGV)
             foreach ($items as $item) {
-                $total += $this->procesarItemDeVenta($venta, $item, $userId);
+                $linea = $this->procesarItemDeVenta($venta, $item, $userId);
+                $total += $linea['subtotal'];
+                $montoGravadoConIgv += $linea['gravado'];
             }
 
-            $venta->total = $total;
+            // En Perú el precio al público incluye IGV: se desglosa hacia atrás.
+            $tasa = (float) config('dsalud.igv.tasa');
+            $baseGravada = $tasa > 0 ? round($montoGravadoConIgv / (1 + $tasa), 2) : $montoGravadoConIgv;
+            $igv         = round($montoGravadoConIgv - $baseGravada, 2);
+
+            $venta->total    = round($total, 2);
+            $venta->subtotal = $baseGravada; // op. gravada (base imponible)
+            $venta->igv      = $igv;
 
             $this->registrarPagos($venta, $total, $pagos, $montoRecibido);
 
             $venta->save();
 
-            $boleta = $this->generarBoletaCorrelativa($venta);
+            $comprobante = $this->generarComprobante($venta, $tipo);
 
             $this->auditoria->registrar(
                 'ventas',
                 'registrar',
-                "Venta #{$venta->id} - Boleta {$boleta->numero_formateado} - Total S/ {$venta->total}"
+                "Venta #{$venta->id} - {$tipo->etiqueta()} {$comprobante->numero_formateado} - Total S/ {$venta->total}"
             );
 
             return $venta->load('detalles.producto', 'boleta', 'cliente', 'pagos');
         });
+    }
+
+    /**
+     * Valida la coherencia del comprobante con el cliente.
+     * Una factura requiere cliente con documento RUC.
+     *
+     * @throws \RuntimeException
+     */
+    private function validarComprobante(TipoComprobante $tipo, ?int $clienteId): void
+    {
+        if (! $tipo->requiereRuc()) {
+            return;
+        }
+
+        $cliente = $clienteId !== null ? Cliente::find($clienteId) : null;
+
+        if ($cliente === null || $cliente->tipo_documento->value !== 'RUC') {
+            throw new \RuntimeException(
+                'Para emitir una factura el cliente debe estar registrado con RUC.'
+            );
+        }
     }
 
     /**
@@ -152,10 +195,12 @@ class VentaService
      * (excluyendo lotes vencidos) y crea las líneas de detalle correspondientes.
      *
      * @param  array{producto_id: int|string, cantidad: int|string}  $item
-     * @return float  Subtotal aportado por este ítem al total de la venta.
+     * @return array{subtotal: float, gravado: float}  Subtotal de la línea y la
+     *         porción afecta a IGV (igual al subtotal si el producto es gravado,
+     *         0 si está exonerado).
      * @throws \RuntimeException  Producto inactivo / stock insuficiente.
      */
-    private function procesarItemDeVenta(Venta $venta, array $item, int $userId): float
+    private function procesarItemDeVenta(Venta $venta, array $item, int $userId): array
     {
         $productoId = (int) $item['producto_id'];
         $cantidadPendiente = (int) $item['cantidad'];
@@ -222,7 +267,12 @@ class VentaService
             );
         }
 
-        return $subtotal;
+        return [
+            'subtotal' => $subtotal,
+            // Si el producto está afecto a IGV, todo el subtotal es base gravada
+            // (con IGV incluido); si está exonerado, no aporta IGV.
+            'gravado'  => $producto->afecto_igv ? $subtotal : 0.0,
+        ];
     }
 
     /**
@@ -243,13 +293,14 @@ class VentaService
     }
 
     /**
-     * Genera la boleta correlativa de la venta usando la tabla `secuencias_boleta`
-     * con lockForUpdate sobre la fila de la serie. Esto serializa el acceso entre
-     * cajas concurrentes y elimina el race condition que tenía el MAX(numero)+1.
+     * Genera el comprobante correlativo (boleta o factura) usando la tabla
+     * `secuencias_boleta` con lockForUpdate sobre la fila de la serie. La serie
+     * depende del tipo (B001 boleta / F001 factura), de modo que cada tipo lleva
+     * su propio correlativo independiente y serializado entre cajas concurrentes.
      */
-    private function generarBoletaCorrelativa(Venta $venta): Boleta
+    private function generarComprobante(Venta $venta, TipoComprobante $tipo): Boleta
     {
-        $serie = (string) config('dsalud.boleta.serie');
+        $serie = $tipo->serie();
 
         DB::table('secuencias_boleta')->updateOrInsert(
             ['serie' => $serie],
@@ -268,10 +319,11 @@ class VentaService
             ->update(['ultimo_numero' => $numero, 'updated_at' => now()]);
 
         return Boleta::create([
-            'venta_id'      => $venta->id,
-            'serie'         => $serie,
-            'numero'        => $numero,
-            'fecha_emision' => now(),
+            'venta_id'         => $venta->id,
+            'tipo_comprobante' => $tipo,
+            'serie'            => $serie,
+            'numero'           => $numero,
+            'fecha_emision'    => now(),
         ]);
     }
 

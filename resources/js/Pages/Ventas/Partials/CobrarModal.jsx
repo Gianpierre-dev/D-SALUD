@@ -26,11 +26,12 @@ const MEDIOS = [
     { value: 'TRANSFERENCIA', label: 'Transferencia', icon: IconBuildingBank },
 ];
 
-export default function CobrarModal({ show, onClose, total, procesando, onConfirmar }) {
+export default function CobrarModal({ show, onClose, total, procesando, onConfirmar, clienteEsRuc = false }) {
     const [mixto, setMixto] = useState(false);
     const [medioSimple, setMedioSimple] = useState('EFECTIVO');
     const [recibido, setRecibido] = useState('');
     const [montosMixtos, setMontosMixtos] = useState({});
+    const [tipoComprobante, setTipoComprobante] = useState('BOLETA');
 
     // Reset al abrir.
     useEffect(() => {
@@ -39,6 +40,7 @@ export default function CobrarModal({ show, onClose, total, procesando, onConfir
         setMedioSimple('EFECTIVO');
         setRecibido('');
         setMontosMixtos({});
+        setTipoComprobante('BOLETA');
     }, [show]);
 
     const totalNum = Number(total) || 0;
@@ -91,8 +93,11 @@ export default function CobrarModal({ show, onClose, total, procesando, onConfir
             pagos = [{ medio_pago: medioSimple, monto: totalNum }];
         }
 
-        onConfirmar(pagos, montoRecibido);
+        onConfirmar(pagos, montoRecibido, tipoComprobante);
     };
+
+    // Factura exige cliente con RUC: el backend lo valida, pero avisamos antes.
+    const facturaSinRuc = tipoComprobante === 'FACTURA' && !clienteEsRuc;
 
     return (
         <Modal show={show} onClose={onClose} maxWidth="md">
@@ -109,6 +114,35 @@ export default function CobrarModal({ show, onClose, total, procesando, onConfir
                     <span className="text-2xl font-bold text-brand-700 dark:text-brand-300">
                         {formatearMoneda(totalNum)}
                     </span>
+                </div>
+
+                {/* Tipo de comprobante */}
+                <div className="mt-4">
+                    <InputLabel value="Comprobante" />
+                    <div className="mt-2 grid grid-cols-2 gap-2">
+                        {[
+                            { value: 'BOLETA', label: 'Boleta' },
+                            { value: 'FACTURA', label: 'Factura' },
+                        ].map(({ value, label }) => (
+                            <button
+                                key={value}
+                                type="button"
+                                onClick={() => setTipoComprobante(value)}
+                                className={`rounded-md border px-3 py-2 text-sm transition ${
+                                    tipoComprobante === value
+                                        ? 'border-brand-500 bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300'
+                                        : 'border-gray-200 text-gray-600 hover:border-brand-300 dark:border-gray-700 dark:text-gray-400'
+                                }`}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
+                    {facturaSinRuc && (
+                        <p className="mt-1 text-xs text-red-600">
+                            La factura requiere un cliente con RUC seleccionado en el carrito.
+                        </p>
+                    )}
                 </div>
 
                 {/* Toggle mixto */}
@@ -210,7 +244,7 @@ export default function CobrarModal({ show, onClose, total, procesando, onConfir
                     <SecondaryButton type="button" onClick={onClose} disabled={procesando}>
                         Cancelar
                     </SecondaryButton>
-                    <PrimaryButton type="button" onClick={confirmar} disabled={!puedeConfirmar}>
+                    <PrimaryButton type="button" onClick={confirmar} disabled={!puedeConfirmar || facturaSinRuc}>
                         {procesando ? 'Registrando...' : 'Confirmar cobro'}
                     </PrimaryButton>
                 </div>

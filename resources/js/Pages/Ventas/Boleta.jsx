@@ -103,10 +103,10 @@ export default function Boleta({ venta, empresa }) {
                 {/* Línea separadora */}
                 <hr className="mb-4 border-dashed border-gray-300 dark:border-gray-600" />
 
-                {/* Datos de la boleta */}
+                {/* Datos del comprobante */}
                 <div className="mb-4 text-center">
                     <h2 className="text-base font-bold uppercase tracking-wider text-gray-900 dark:text-gray-100 print:text-black">
-                        Boleta de Venta
+                        {boleta?.tipo_comprobante === 'FACTURA' ? 'Factura' : 'Boleta de Venta'}
                     </h2>
                     <p className="text-lg font-semibold text-brand-600 dark:text-brand-400">
                         {boleta?.numero_formateado}
@@ -187,8 +187,29 @@ export default function Boleta({ venta, empresa }) {
 
                 <hr className="mb-3 border-gray-200 dark:border-gray-700" />
 
-                {/* Total */}
-                <div className="flex items-center justify-between">
+                {/* Desglose tributario (op. gravada + IGV + total) */}
+                <div className="space-y-1 text-sm">
+                    <div className="flex items-center justify-between text-gray-600 dark:text-gray-400 print:text-black">
+                        <span>Op. Gravada</span>
+                        <span>{formatearMoneda(venta.subtotal)}</span>
+                    </div>
+                    {Number(venta.total) - Number(venta.subtotal) - Number(venta.igv) > 0.001 && (
+                        <div className="flex items-center justify-between text-gray-600 dark:text-gray-400 print:text-black">
+                            <span>Op. Exonerada</span>
+                            <span>
+                                {formatearMoneda(
+                                    Number(venta.total) - Number(venta.subtotal) - Number(venta.igv),
+                                )}
+                            </span>
+                        </div>
+                    )}
+                    <div className="flex items-center justify-between text-gray-600 dark:text-gray-400 print:text-black">
+                        <span>IGV (18%)</span>
+                        <span>{formatearMoneda(venta.igv)}</span>
+                    </div>
+                </div>
+
+                <div className="mt-2 flex items-center justify-between border-t border-gray-200 pt-2 dark:border-gray-700">
                     <span className="text-base font-bold text-gray-800 dark:text-gray-100 print:text-black">
                         TOTAL
                     </span>

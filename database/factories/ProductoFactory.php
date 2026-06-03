@@ -45,6 +45,7 @@ class ProductoFactory extends Factory
             'laboratorio'  => $this->faker->optional(0.8)->company(),
             'unidad_medida' => $this->faker->randomElement($unidades),
             'precio_venta' => $this->faker->randomFloat(2, 1.50, 150.00),
+            'afecto_igv'   => true,
             'stock_minimo' => $this->faker->numberBetween(5, 20),
             'activo'       => true,
         ];
@@ -53,6 +54,11 @@ class ProductoFactory extends Factory
     public function inactivo(): static
     {
         return $this->state(['activo' => false]);
+    }
+
+    public function exonerado(): static
+    {
+        return $this->state(['afecto_igv' => false]);
     }
 
     public function conCategoria(Categoria $categoria): static

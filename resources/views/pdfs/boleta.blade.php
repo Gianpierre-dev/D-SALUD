@@ -168,9 +168,9 @@
 
     <hr class="divider">
 
-    {{-- Título y número de boleta --}}
+    {{-- Título y número de comprobante --}}
     <div class="titulo-boleta">
-        <h2>Boleta de Venta</h2>
+        <h2>{{ $boleta?->tipo_comprobante?->value === 'FACTURA' ? 'Factura' : 'Boleta de Venta' }}</h2>
         <p class="numero">{{ $boleta?->numero_formateado ?? '—' }}</p>
     </div>
 
@@ -218,6 +218,27 @@
                 </tr>
             @endforeach
         </tbody>
+    </table>
+
+    {{-- Desglose tributario --}}
+    @php
+        $exonerada = (float) $venta->total - (float) $venta->subtotal - (float) $venta->igv;
+    @endphp
+    <table class="bloque" style="margin-top: 8px;">
+        <tr>
+            <th style="text-align:right;">Op. Gravada</th>
+            <td style="text-align:right; width:120px;">S/ {{ number_format((float) $venta->subtotal, 2) }}</td>
+        </tr>
+        @if ($exonerada > 0.001)
+            <tr>
+                <th style="text-align:right;">Op. Exonerada</th>
+                <td style="text-align:right;">S/ {{ number_format($exonerada, 2) }}</td>
+            </tr>
+        @endif
+        <tr>
+            <th style="text-align:right;">IGV (18%)</th>
+            <td style="text-align:right;">S/ {{ number_format((float) $venta->igv, 2) }}</td>
+        </tr>
     </table>
 
     {{-- Total --}}

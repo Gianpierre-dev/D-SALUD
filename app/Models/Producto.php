@@ -22,12 +22,14 @@ class Producto extends Model
         'laboratorio',
         'unidad_medida',
         'precio_venta',
+        'afecto_igv',
         'stock_minimo',
         'activo',
     ];
 
     protected $casts = [
         'precio_venta' => 'decimal:2',
+        'afecto_igv' => 'boolean',
         'stock_minimo' => 'integer',
         'activo' => 'boolean',
     ];

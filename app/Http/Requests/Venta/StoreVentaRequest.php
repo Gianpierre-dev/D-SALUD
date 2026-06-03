@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests\Venta;
 
 use App\Enums\MedioPago;
+use App\Enums\TipoComprobante;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -26,6 +27,7 @@ class StoreVentaRequest extends FormRequest
         // request podía bloquear la tabla `lotes` durante minutos.
         return [
             'cliente_id'             => ['nullable', 'integer', 'exists:clientes,id'],
+            'tipo_comprobante'       => ['nullable', 'string', Rule::in(TipoComprobante::values())],
             'items'                  => ['required', 'array', 'min:1', 'max:50'],
             'items.*.producto_id'    => ['required', 'integer', 'distinct', 'exists:productos,id'],
             'items.*.cantidad'       => ['required', 'integer', 'min:1', 'max:10000'],

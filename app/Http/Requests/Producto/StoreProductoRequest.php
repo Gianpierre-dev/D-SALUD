@@ -28,6 +28,7 @@ class StoreProductoRequest extends FormRequest
             // decimal(10,2) en la migración → tope efectivo 99,999,999.99.
             'precio_venta'  => ['required', 'numeric', 'min:0', 'max:99999999.99'],
             'stock_minimo'  => ['required', 'integer', 'min:0', 'max:99999'],
+            'afecto_igv'    => ['boolean'],
             'activo'        => ['boolean'],
         ];
     }

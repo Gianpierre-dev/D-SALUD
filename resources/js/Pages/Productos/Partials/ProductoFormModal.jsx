@@ -30,6 +30,7 @@ export default function ProductoFormModal({
         laboratorio: '',
         unidad_medida: '',
         precio_venta: '',
+        afecto_igv: true,
         stock_minimo: 0,
         activo: true,
     });
@@ -47,6 +48,7 @@ export default function ProductoFormModal({
                 laboratorio: producto.laboratorio ?? '',
                 unidad_medida: producto.unidad_medida,
                 precio_venta: producto.precio_venta,
+                afecto_igv: Boolean(producto.afecto_igv),
                 stock_minimo: producto.stock_minimo,
                 activo: Boolean(producto.activo),
             });
@@ -184,6 +186,22 @@ export default function ProductoFormModal({
                         placeholder="0"
                     />
                     <InputError message={errors.stock_minimo} className="mt-2" />
+                </div>
+
+                {/* Afecto a IGV */}
+                <div className="mt-4">
+                    <label className="flex items-center">
+                        <Checkbox
+                            checked={data.afecto_igv}
+                            onChange={(e) => setData('afecto_igv', e.target.checked)}
+                        />
+                        <span className="ms-2 text-sm text-gray-600 dark:text-gray-400">
+                            Afecto a IGV (18%)
+                        </span>
+                    </label>
+                    <p className="ms-6 text-xs text-gray-400">
+                        Desmárcalo solo si el producto está exonerado de IGV por norma.
+                    </p>
                 </div>
 
                 {/* Activo */}

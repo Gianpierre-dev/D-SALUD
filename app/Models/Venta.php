@@ -24,6 +24,8 @@ class Venta extends Model
         'cliente_id',
         'caja_id',
         'total',
+        'subtotal',
+        'igv',
         'monto_recibido',
         'vuelto',
         'estado',
@@ -34,6 +36,8 @@ class Venta extends Model
 
     protected $casts = [
         'total' => 'decimal:2',
+        'subtotal' => 'decimal:2',
+        'igv' => 'decimal:2',
         'monto_recibido' => 'decimal:2',
         'vuelto' => 'decimal:2',
         'anulada_en' => 'datetime',

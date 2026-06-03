@@ -97,6 +97,7 @@ class VentaController extends Controller
                 $validated['pagos'],
                 $caja->id,
                 $montoRecibido,
+                $validated['tipo_comprobante'] ?? null,
             );
 
             if ($idempotencyKey !== null) {
