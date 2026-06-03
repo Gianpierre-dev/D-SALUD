@@ -9,6 +9,7 @@ import {
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import Badge from '@/Components/Badge';
 import StatCard from '@/Pages/Dashboard/Partials/StatCard';
+import DashboardCharts from '@/Pages/Dashboard/Partials/DashboardCharts';
 import { formatearMoneda } from '@/utils/format';
 
 /**
@@ -42,7 +43,14 @@ function formatearFecha(fecha) {
     });
 }
 
-export default function Dashboard({ indicadores = {}, stockBajo = [], porVencer = [] }) {
+export default function Dashboard({
+    indicadores = {},
+    stockBajo = [],
+    porVencer = [],
+    ventasPorDia = [],
+    topProductos = [],
+    ventasPorMedio = [],
+}) {
     return (
         <AuthenticatedLayout
             header={
@@ -78,6 +86,15 @@ export default function Dashboard({ indicadores = {}, stockBajo = [], porVencer 
                         icon={IconPackage}
                     />
                 </div>
+            </section>
+
+            {/* ─── Gráficos ────────────────────────────────────────────────── */}
+            <section aria-label="Gráficos de ventas" className="mt-8">
+                <DashboardCharts
+                    ventasPorDia={ventasPorDia}
+                    topProductos={topProductos}
+                    ventasPorMedio={ventasPorMedio}
+                />
             </section>
 
             {/* ─── Alertas de inventario ───────────────────────────────────── */}

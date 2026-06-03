@@ -21,6 +21,7 @@
         "vite": "^6.0.11"
     },
     "dependencies": {
-        "@tabler/icons-react": "^3.44.0"
+        "@tabler/icons-react": "^3.44.0",
+        "recharts": "^3.8.1"
     }
 }

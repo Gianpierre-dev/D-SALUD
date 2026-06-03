@@ -17,9 +17,12 @@ class DashboardController extends Controller
     public function index(): Response
     {
         return Inertia::render('Dashboard', [
-            'indicadores' => $this->service->indicadoresDelDia(),
-            'stockBajo'   => $this->service->productosStockBajo(),
-            'porVencer'   => $this->service->productosPorVencer(),
+            'indicadores'     => $this->service->indicadoresDelDia(),
+            'stockBajo'       => $this->service->productosStockBajo(),
+            'porVencer'       => $this->service->productosPorVencer(),
+            'ventasPorDia'    => $this->service->ventasUltimosDias(14),
+            'topProductos'    => $this->service->topProductosDelMes(5),
+            'ventasPorMedio'  => $this->service->ventasPorMedioDelMes(),
         ]);
     }
 }
