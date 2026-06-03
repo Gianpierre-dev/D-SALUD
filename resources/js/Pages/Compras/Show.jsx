@@ -16,7 +16,7 @@ import ConfirmDialog from '@/Components/ConfirmDialog';
 import Modal from '@/Components/Modal';
 import InputLabel from '@/Components/InputLabel';
 import InputError from '@/Components/InputError';
-import { formatearMoneda } from '@/utils/format';
+import { formatearMoneda, formatearFecha, formatearFechaHora } from '@/utils/format';
 
 /**
  * Vista de detalle de una compra.
@@ -33,15 +33,6 @@ export default function Show({ compra }) {
     const recibir = useForm({});
     const anular  = useForm({ motivo: '' });
 
-    const formatFecha = (fecha, conHora = false) =>
-        fecha
-            ? new Date(fecha).toLocaleDateString('es-PE', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                  ...(conHora ? { hour: '2-digit', minute: '2-digit' } : {}),
-              })
-            : '—';
 
     const colorEstado = (estado) =>
         ({
@@ -128,7 +119,7 @@ export default function Show({ compra }) {
                         <div>
                             <span className="text-gray-500 dark:text-gray-400">Fecha de compra</span>
                             <p className="font-semibold text-gray-800 dark:text-gray-100">
-                                {formatFecha(compra.fecha_compra)}
+                                {formatearFecha(compra.fecha_compra)}
                             </p>
                         </div>
                         <div>
@@ -137,7 +128,7 @@ export default function Show({ compra }) {
                                 {compra.registrada_por?.name ?? '—'}
                             </p>
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {formatFecha(compra.created_at, true)}
+                                {formatearFechaHora(compra.created_at)}
                             </p>
                         </div>
 
@@ -151,7 +142,7 @@ export default function Show({ compra }) {
                         {compra.estado === 'RECIBIDA' && (
                             <div className="sm:col-span-3 rounded-md border border-emerald-200 bg-emerald-50 p-3 dark:border-emerald-800 dark:bg-emerald-900/20">
                                 <p className="text-sm font-semibold text-emerald-700 dark:text-emerald-300">
-                                    Mercadería recibida el {formatFecha(compra.recibida_en, true)}
+                                    Mercadería recibida el {formatearFechaHora(compra.recibida_en)}
                                     {compra.recibida_por ? ` por ${compra.recibida_por.name}` : ''}.
                                 </p>
                                 <p className="text-xs text-emerald-700 dark:text-emerald-400">
@@ -164,7 +155,7 @@ export default function Show({ compra }) {
                         {compra.estado === 'ANULADA' && (
                             <div className="sm:col-span-3 rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20">
                                 <p className="text-sm font-semibold text-red-700 dark:text-red-300">
-                                    Compra anulada el {formatFecha(compra.anulada_en, true)}
+                                    Compra anulada el {formatearFechaHora(compra.anulada_en)}
                                     {compra.anulada_por ? ` por ${compra.anulada_por.name}` : ''}.
                                 </p>
                                 {compra.motivo_anulacion && (
@@ -204,7 +195,7 @@ export default function Show({ compra }) {
                                             {detalle.codigo_lote}
                                         </td>
                                         <td className="py-2 text-gray-700 dark:text-gray-300">
-                                            {formatFecha(detalle.fecha_vencimiento)}
+                                            {formatearFecha(detalle.fecha_vencimiento)}
                                         </td>
                                         <td className="py-2 text-right">{detalle.cantidad}</td>
                                         <td className="py-2 text-right">

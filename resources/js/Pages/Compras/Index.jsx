@@ -8,7 +8,7 @@ import Can from '@/Components/Can';
 import IconButton from '@/Components/IconButton';
 import SelectInput from '@/Components/SelectInput';
 import PrimaryButton from '@/Components/PrimaryButton';
-import { formatearMoneda } from '@/utils/format';
+import { formatearMoneda, formatearFecha } from '@/utils/format';
 
 /**
  * Listado de órdenes de compra con filtros.
@@ -22,15 +22,6 @@ export default function Index({ compras, filtros, proveedores = [], estados = []
             { preserveState: true, replace: true },
         );
     };
-
-    const formatFecha = (fecha) =>
-        fecha
-            ? new Date(fecha).toLocaleDateString('es-PE', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-              })
-            : '—';
 
     const colorEstado = (estado) =>
         ({
@@ -48,7 +39,7 @@ export default function Index({ compras, filtros, proveedores = [], estados = []
         {
             key: 'fecha_compra',
             label: 'Fecha',
-            render: (row) => formatFecha(row.fecha_compra),
+            render: (row) => formatearFecha(row.fecha_compra),
         },
         {
             key: 'proveedor',

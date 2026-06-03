@@ -12,6 +12,7 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import LoteFormModal from './Partials/LoteFormModal';
 import { useFormModal } from '@/hooks/useFormModal';
 import { useDelete } from '@/hooks/useDelete';
+import { formatearFecha } from '@/utils/format';
 
 /**
  * Determina el estado de vencimiento del lote.
@@ -35,15 +36,6 @@ function estadoVencimiento(fechaVencimiento, diasAlerta) {
     }
 
     return null;
-}
-
-/**
- * Formatea una cadena de fecha (YYYY-MM-DD) a formato local legible.
- */
-function formatearFecha(fecha) {
-    if (!fecha) return '—';
-    const [year, month, day] = fecha.split('-');
-    return `${day}/${month}/${year}`;
 }
 
 export default function Index({ lotes, productos, proveedores, filtros, diasAlerta }) {

@@ -10,7 +10,7 @@ import IconButton from '@/Components/IconButton';
 import SelectInput from '@/Components/SelectInput';
 import PrimaryButton from '@/Components/PrimaryButton';
 import AbrirCajaModal from './Partials/AbrirCajaModal';
-import { formatearMoneda } from '@/utils/format';
+import { formatearMoneda, formatearFechaHora } from '@/utils/format';
 
 /**
  * Listado de cajas (turnos) con filtros y CTA "Abrir caja" si el usuario
@@ -27,19 +27,12 @@ export default function Index({ cajas, filtros, miCajaAbierta = null, esAdmin = 
         );
     };
 
-    const formatFecha = (fecha) =>
-        fecha
-            ? new Date(fecha).toLocaleDateString('es-PE', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                  hour: '2-digit',
-                  minute: '2-digit',
-              })
-            : '—';
-
     const columns = [
-        { key: 'id', label: 'N°' },
+        {
+            key: 'id',
+            label: 'N°',
+            render: (row) => `CAJA-${String(row.id).padStart(5, '0')}`,
+        },
         {
             key: 'cajero',
             label: 'Cajero',
@@ -48,7 +41,7 @@ export default function Index({ cajas, filtros, miCajaAbierta = null, esAdmin = 
         {
             key: 'abierta_en',
             label: 'Apertura',
-            render: (row) => formatFecha(row.abierta_en),
+            render: (row) => formatearFechaHora(row.abierta_en),
         },
         {
             key: 'monto_apertura',
@@ -58,7 +51,7 @@ export default function Index({ cajas, filtros, miCajaAbierta = null, esAdmin = 
         {
             key: 'cerrada_en',
             label: 'Cierre',
-            render: (row) => formatFecha(row.cerrada_en),
+            render: (row) => formatearFechaHora(row.cerrada_en),
         },
         {
             key: 'diferencia',
@@ -80,8 +73,10 @@ export default function Index({ cajas, filtros, miCajaAbierta = null, esAdmin = 
         {
             key: 'estado',
             label: 'Estado',
+            // ABIERTA es el estado operativo normal (verde); CERRADA es
+            // terminal/neutral. Coherente con el banner verde de arriba.
             render: (row) => (
-                <Badge variant={row.estado === 'ABIERTA' ? 'warning' : 'success'}>
+                <Badge variant={row.estado === 'ABIERTA' ? 'success' : 'neutral'}>
                     {row.estado}
                 </Badge>
             ),
@@ -117,7 +112,7 @@ export default function Index({ cajas, filtros, miCajaAbierta = null, esAdmin = 
                                     Tienes una caja abierta (#{miCajaAbierta.id})
                                 </p>
                                 <p className="text-xs text-emerald-700 dark:text-emerald-400">
-                                    Apertura: {formatFecha(miCajaAbierta.abierta_en)} ·
+                                    Apertura: {formatearFechaHora(miCajaAbierta.abierta_en)} ·
                                     Monto inicial: {formatearMoneda(miCajaAbierta.monto_apertura)}
                                 </p>
                             </div>

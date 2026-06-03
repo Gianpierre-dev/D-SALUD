@@ -15,21 +15,11 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import SecondaryButton from '@/Components/SecondaryButton';
 import CerrarCajaModal from './Partials/CerrarCajaModal';
 import MovimientoCajaModal from './Partials/MovimientoCajaModal';
-import { formatearMoneda } from '@/utils/format';
+import { formatearMoneda, formatearFechaHora } from '@/utils/format';
 
 export default function Show({ caja, desglosePorMedio = [], tiposMovimiento = [] }) {
     const [cerrarAbierto, setCerrarAbierto] = useState(false);
     const [movAbierto, setMovAbierto] = useState(false);
-
-    const formatFecha = (fecha, conHora = true) =>
-        fecha
-            ? new Date(fecha).toLocaleDateString('es-PE', {
-                  day: '2-digit',
-                  month: '2-digit',
-                  year: 'numeric',
-                  ...(conHora ? { hour: '2-digit', minute: '2-digit' } : {}),
-              })
-            : '—';
 
     const estaAbierta = caja.estado === 'ABIERTA';
     const diferencia  = caja.diferencia !== null ? Number(caja.diferencia) : null;
@@ -110,7 +100,7 @@ export default function Show({ caja, desglosePorMedio = [], tiposMovimiento = []
                         <div>
                             <dt className="text-gray-500 dark:text-gray-400">Fecha y hora</dt>
                             <dd className="font-medium text-gray-800 dark:text-gray-100">
-                                {formatFecha(caja.abierta_en)}
+                                {formatearFechaHora(caja.abierta_en)}
                             </dd>
                         </div>
                         <div className="sm:col-span-2">
@@ -193,7 +183,7 @@ export default function Show({ caja, desglosePorMedio = [], tiposMovimiento = []
                             <div>
                                 <dt className="text-gray-500 dark:text-gray-400">Fecha y hora</dt>
                                 <dd className="font-medium text-gray-800 dark:text-gray-100">
-                                    {formatFecha(caja.cerrada_en)}
+                                    {formatearFechaHora(caja.cerrada_en)}
                                 </dd>
                             </div>
                             <div>

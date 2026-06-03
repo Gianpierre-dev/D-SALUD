@@ -9,6 +9,7 @@ import Can from '@/Components/Can';
 import SelectInput from '@/Components/SelectInput';
 import PrimaryButton from '@/Components/PrimaryButton';
 import MovimientoFormModal from './Partials/MovimientoFormModal';
+import { formatearFechaHora } from '@/utils/format';
 
 /**
  * Listado del kardex con filtros (producto, lote, tipo, motivo, fechas).
@@ -32,20 +33,11 @@ export default function Index({
         );
     };
 
-    const formatFecha = (fecha) =>
-        new Date(fecha).toLocaleDateString('es-PE', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
-
     const columns = [
         {
             key: 'created_at',
             label: 'Fecha',
-            render: (row) => formatFecha(row.created_at),
+            render: (row) => formatearFechaHora(row.created_at),
         },
         {
             key: 'tipo',

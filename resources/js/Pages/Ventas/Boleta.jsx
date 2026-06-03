@@ -2,7 +2,7 @@ import { Head, Link } from '@inertiajs/react';
 import { IconPrinter, IconArrowLeft, IconFileTypePdf } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { ESTADO_VENTA } from '@/constants';
-import { formatearMoneda } from '@/utils/format';
+import { formatearMoneda, formatearFechaHora } from '@/utils/format';
 
 /**
  * Vista de boleta de venta.
@@ -22,15 +22,6 @@ export default function Boleta({ venta, empresa }) {
     // que está versionado en public/logo.png. Garantiza que la boleta nunca
     // salga sin imagen institucional.
     const logoSrc = empresa?.logo ?? '/logo.png';
-
-    const formatFecha = (fecha) =>
-        new Date(fecha).toLocaleDateString('es-PE', {
-            day: '2-digit',
-            month: '2-digit',
-            year: 'numeric',
-            hour: '2-digit',
-            minute: '2-digit',
-        });
 
     return (
         <AuthenticatedLayout
@@ -116,7 +107,7 @@ export default function Boleta({ venta, empresa }) {
                 <div className="mb-4 grid grid-cols-2 gap-1 text-sm">
                     <span className="text-gray-500 dark:text-gray-400 print:text-black">Fecha:</span>
                     <span className="text-gray-800 dark:text-gray-200 print:text-black">
-                        {boleta?.fecha_emision ? formatFecha(boleta.fecha_emision) : '—'}
+                        {formatearFechaHora(boleta?.fecha_emision)}
                     </span>
                     <span className="text-gray-500 dark:text-gray-400 print:text-black">Vendedor:</span>
                     <span className="text-gray-800 dark:text-gray-200 print:text-black">
