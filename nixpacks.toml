@@ -10,9 +10,15 @@
 # raíz del store y nix-env aborta). El package-lock.json se regeneró para
 # incluir recharts; el pnpm-lock.yaml se ignora en .railwayignore.
 #
-# Aquí solo se sobreescribe la fase de build para garantizar dependencias de
-# producción (--no-dev) y la compilación de assets de Vite. Las migraciones y
-# el seed van en el pre-deploy (railway.json), donde sí hay red a la DB.
+# El servicio web se sirve con nginx + php-fpm (no `php artisan serve`); el
+# startCommand vive en railway.json. Estas variables las consume el template
+# de nginx de Nixpacks en el arranque: root del sitio = /app/public y activar
+# el bloque de routing de Laravel. Definirlas aquí mantiene el deploy
+# reproducible desde el repo (sin setear variables a mano en Railway).
+
+[variables]
+NIXPACKS_PHP_ROOT_DIR = "/app/public"
+IS_LARAVEL = "1"
 
 [phases.build]
 cmds = [
