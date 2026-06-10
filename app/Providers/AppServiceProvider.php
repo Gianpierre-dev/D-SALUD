@@ -26,6 +26,12 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
 
+        // Genera un nonce por request para el Content-Security-Policy.
+        // Vite aplica el nonce a sus <script>/<style>; el resto (script de tema
+        // y @routes de Ziggy) lo toman vía Vite::cspNonce(). El header CSP se
+        // arma en el middleware SecurityHeaders.
+        Vite::useCspNonce();
+
         // Política de contraseñas (NIST SP 800-63B): longitud mínima 10,
         // combinación de mayúsculas, minúsculas, números y símbolos.
         // En producción adicionalmente se rechazan contraseñas comprometidas.
