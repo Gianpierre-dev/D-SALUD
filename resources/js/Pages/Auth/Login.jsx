@@ -5,9 +5,9 @@ import PasswordInput from '@/Components/PasswordInput';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
+import { Head, useForm } from '@inertiajs/react';
 
-export default function Login({ status, canResetPassword }) {
+export default function Login({ status }) {
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
@@ -80,17 +80,13 @@ export default function Login({ status, canResetPassword }) {
                     </label>
                 </div>
 
-                <div className="mt-4 flex items-center justify-end">
-                    {canResetPassword && (
-                        <Link
-                            href={route('password.request')}
-                            className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2"
-                        >
-                            ¿Olvidaste tu contraseña?
-                        </Link>
-                    )}
+                <div className="mt-4 flex items-center justify-between gap-4">
+                    <p className="text-xs text-gray-500 dark:text-gray-400">
+                        ¿Olvidaste tu contraseña? Solicita el
+                        restablecimiento al administrador.
+                    </p>
 
-                    <PrimaryButton className="ms-4" disabled={processing}>
+                    <PrimaryButton disabled={processing}>
                         Iniciar sesión
                     </PrimaryButton>
                 </div>
