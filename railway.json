@@ -5,7 +5,7 @@
   },
   "deploy": {
     "preDeployCommand": "php artisan migrate --force && php artisan db:seed --force",
-    "startCommand": "php artisan optimize; php artisan storage:link 2>/dev/null; node /assets/scripts/prestart.mjs /assets/nginx.template.conf /nginx.conf && (php-fpm -y /assets/php-fpm.conf & nginx -c /nginx.conf)",
+    "startCommand": "php artisan optimize; php artisan storage:link 2>/dev/null; node /assets/scripts/prestart.mjs /app/docker/nginx.template.conf /nginx.conf && (php-fpm -y /assets/php-fpm.conf & nginx -c /nginx.conf)",
     "healthcheckPath": "/up",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE",
