@@ -3,6 +3,7 @@ import { useForm } from '@inertiajs/react';
 import Modal from '@/Components/Modal';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
+import PasswordInput from '@/Components/PasswordInput';
 import InputError from '@/Components/InputError';
 import SelectInput from '@/Components/SelectInput';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -103,9 +104,8 @@ export default function UsuarioFormModal({ show, onClose, usuario = null, roles 
                         htmlFor="password"
                         value={esEdicion ? 'Nueva contraseña (opcional)' : 'Contraseña'}
                     />
-                    <TextInput
+                    <PasswordInput
                         id="password"
-                        type="password"
                         className="mt-1 block w-full"
                         value={data.password}
                         onChange={(e) => setData('password', e.target.value)}
@@ -121,9 +121,8 @@ export default function UsuarioFormModal({ show, onClose, usuario = null, roles 
                         htmlFor="password_confirmation"
                         value="Confirmar contraseña"
                     />
-                    <TextInput
+                    <PasswordInput
                         id="password_confirmation"
-                        type="password"
                         className="mt-1 block w-full"
                         value={data.password_confirmation}
                         onChange={(e) => setData('password_confirmation', e.target.value)}
