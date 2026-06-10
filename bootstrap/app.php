@@ -41,8 +41,20 @@ return Application::configure(basePath: dirname(__DIR__))
                 return null;
             }
 
-            $status = method_exists($e, 'getStatusCode')
-                ? (int) $e->getStatusCode()
+            // No interceptar excepciones con manejo nativo propio de Laravel:
+            //  - AuthenticationException -> redirige a login (302)
+            //  - ValidationException     -> vuelve con errores (422)
+            // Si se interceptaran, ambas terminarían como un 500 falso porque
+            // no exponen getStatusCode().
+            if ($e instanceof \Illuminate\Auth\AuthenticationException
+                || $e instanceof \Illuminate\Validation\ValidationException) {
+                return null;
+            }
+
+            // Las HttpException ya traen su código (404, 403, 503...). Cualquier
+            // otra excepción no controlada es un 500 real.
+            $status = $e instanceof \Symfony\Component\HttpKernel\Exception\HttpExceptionInterface
+                ? $e->getStatusCode()
                 : 500;
 
             if (! in_array($status, [403, 404, 419, 500, 503], true)) {
