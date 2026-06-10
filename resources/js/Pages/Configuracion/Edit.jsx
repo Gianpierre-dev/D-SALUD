@@ -6,17 +6,24 @@ import InputError from '@/Components/InputError';
 import PrimaryButton from '@/Components/PrimaryButton';
 import { soloDigitos, telefonoLimpio } from '@/utils/inputs';
 
-export default function Edit({ empresa }) {
-    const { data, setData, put, processing, errors } = useForm({
+export default function Edit({ empresa, logoUrl }) {
+    const { data, setData, post, processing, errors } = useForm({
+        _method:      'put',
         razon_social: empresa.razon_social ?? '',
         ruc:          empresa.ruc          ?? '',
         direccion:    empresa.direccion    ?? '',
         telefono:     empresa.telefono     ?? '',
+        logo:         null,
     });
+
+    // Previsualiza el archivo recién elegido; si no hay, muestra el logo actual.
+    const previewLogo = data.logo ? URL.createObjectURL(data.logo) : logoUrl;
 
     const submit = (e) => {
         e.preventDefault();
-        put(route('configuracion.update'));
+        // forceFormData + _method=put: el PUT con archivo requiere multipart
+        // y spoofing de método (PHP no procesa multipart en PUT nativo).
+        post(route('configuracion.update'), { forceFormData: true });
     };
 
     return (
@@ -95,6 +102,29 @@ export default function Edit({ empresa }) {
                                 placeholder="+51 1 1234567"
                             />
                             <InputError message={errors.telefono} className="mt-2" />
+                        </div>
+
+                        {/* Logo — aparece en boletas, reporte Z y Excel. */}
+                        <div>
+                            <InputLabel htmlFor="logo" value="Logo (opcional)" />
+                            <div className="mt-2 flex items-center gap-4">
+                                <img
+                                    src={previewLogo}
+                                    alt="Logo de la empresa"
+                                    className="h-16 w-16 rounded border border-gray-200 object-contain p-1 dark:border-gray-700"
+                                />
+                                <input
+                                    id="logo"
+                                    type="file"
+                                    accept="image/png,image/jpeg,image/webp"
+                                    onChange={(e) => setData('logo', e.target.files[0] ?? null)}
+                                    className="block text-sm text-gray-600 file:mr-4 file:rounded-md file:border-0 file:bg-brand-50 file:px-4 file:py-2 file:text-sm file:font-medium file:text-brand-700 hover:file:bg-brand-100 dark:text-gray-400"
+                                />
+                            </div>
+                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                                PNG, JPG o WEBP. Máximo 2 MB. Se usa en boletas y reportes.
+                            </p>
+                            <InputError message={errors.logo} className="mt-2" />
                         </div>
 
                         <div className="flex justify-end">

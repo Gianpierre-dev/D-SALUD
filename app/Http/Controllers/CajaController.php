@@ -149,7 +149,7 @@ class CajaController extends Controller
         $pdf = Pdf::loadView('pdfs.reporte_z', [
             'caja'             => $caja,
             'empresa'          => $this->empresa->obtener(),
-            'logoPath'         => public_path('logo.png'),
+            'logoPath'         => $this->empresa->rutaLogo(),
             'desglosePorMedio' => $this->desgloseConEtiquetas($caja),
         ])->setPaper('a4', 'portrait');
 

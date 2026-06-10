@@ -96,7 +96,7 @@ abstract class ReporteEjecutivoExport implements
      */
     public function drawings(): array
     {
-        $logoPath = public_path('logo.png');
+        $logoPath = app(\App\Services\EmpresaService::class)->rutaLogo();
         if (! file_exists($logoPath)) {
             return [];
         }

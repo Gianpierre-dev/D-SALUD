@@ -27,8 +27,11 @@ class DatabaseSeeder extends Seeder
         // Roles y permisos primero (los usuarios dependen de los roles).
         $this->call(RolePermissionSeeder::class);
 
-        // Configuración inicial de la empresa (singleton).
-        Empresa::updateOrCreate(
+        // Configuración inicial de la empresa (singleton). Se usa firstOrCreate
+        // (no updateOrCreate) para NO pisar los datos que el administrador
+        // configure desde la UI: el seeder corre en cada deploy y sobrescribiría
+        // la razón social/RUC/logo reales en cada despliegue.
+        Empresa::firstOrCreate(
             ['id' => 1],
             [
                 'razon_social' => "Botica D'Salud S.A.C.",

@@ -23,6 +23,7 @@ class UpdateEmpresaRequest extends FormRequest
             'ruc'          => ['required', 'string', 'size:11', 'regex:/^[0-9]+$/'],
             'direccion'    => ['nullable', 'string', 'max:255'],
             'telefono'     => ['nullable', 'string', 'max:20'],
+            'logo'         => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
         ];
     }
 
@@ -36,6 +37,7 @@ class UpdateEmpresaRequest extends FormRequest
             'ruc'          => 'RUC',
             'direccion'    => 'dirección',
             'telefono'     => 'teléfono',
+            'logo'         => 'logo',
         ];
     }
 }

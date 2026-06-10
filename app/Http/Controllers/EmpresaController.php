@@ -20,12 +20,16 @@ class EmpresaController extends Controller
     {
         return Inertia::render('Configuracion/Edit', [
             'empresa' => $this->service->obtener(),
+            'logoUrl' => $this->service->urlLogo(),
         ]);
     }
 
     public function update(UpdateEmpresaRequest $request): RedirectResponse
     {
-        $this->service->actualizar($request->validated());
+        $this->service->actualizar(
+            $request->safe()->except('logo'),
+            $request->file('logo'),
+        );
 
         return redirect()->route('configuracion.edit')
             ->with('success', 'Configuración de empresa actualizada correctamente.');

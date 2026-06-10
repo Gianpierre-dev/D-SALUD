@@ -199,8 +199,8 @@ class VentaController extends Controller
 
         $venta->load('detalles.producto', 'boleta', 'vendedor', 'cliente');
 
-        $logoPath = public_path('logo.png');
         $empresa  = $this->empresa->obtener();
+        $logoPath = $this->empresa->rutaLogo();
 
         $pdf = Pdf::loadView('pdfs.boleta', [
             'venta'    => $venta,
