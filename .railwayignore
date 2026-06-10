@@ -1,0 +1,15 @@
+# Artefactos que no forman parte de la app y no deben subirse al build.
+# Se usa npm en el build (package-lock.json regenerado e incluye recharts).
+# pnpm + composer colisionan en el nix-env de Nixpacks (archivos LICENSE),
+# por eso se ignora pnpm-lock.yaml para forzar el camino npm.
+pnpm-lock.yaml
+.atl/
+.playwright-mcp/
+TAP_*.docx
+fusionar_tap.py
+generar_secciones_tap.py
+preview_tap.html
+datauri.txt
+tap_preview_top.png
+tap_capV.png
+tap_refs.png

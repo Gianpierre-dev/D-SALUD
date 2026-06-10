@@ -11,6 +11,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        // Railway (y cualquier PaaS) sirve la app detrás de un proxy que
+        // termina el TLS. Confiar en los headers X-Forwarded-* permite que
+        // Laravel detecte HTTPS y genere URLs/redirecciones seguras.
+        $middleware->trustProxies(at: '*');
+
         $middleware->web(append: [
             \App\Http\Middleware\HandleInertiaRequests::class,
             \App\Http\Middleware\SecurityHeaders::class,

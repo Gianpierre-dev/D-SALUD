@@ -1,34 +1,22 @@
-# Configuración de despliegue para Railway / Nixpacks.
+# Personalización del BUILD para Railway / Nixpacks.
 #
-# El servicio web ejecuta el comando definido en [start]. Para los servicios
-# adicionales (queue worker y scheduler) crear servicios separados en Railway
-# apuntando al mismo repositorio con los comandos:
-#   - Worker:    php artisan queue:work --tries=3 --max-time=3600
-#   - Scheduler: php artisan schedule:work
-
-[phases.setup]
-nixPkgs = ["nodejs_20", "php82", "php82Extensions.zip", "php82Extensions.gd", "php82Extensions.intl"]
+# IMPORTANTE: NO se define [phases.setup]. El provider de PHP de Nixpacks
+# detecta Laravel y arma el setup completo (php + composer + node + nginx +
+# php-fpm). Si redefiniéramos [phases.setup] reemplazaríamos ese setup y
+# dejaríamos a composer fuera del PATH (build roto).
+#
+# Gestor de paquetes JS: npm. Se usa npm (y no pnpm) porque pnpm + composer
+# colisionan en el nix-env de Nixpacks (ambos traen un archivo LICENSE en la
+# raíz del store y nix-env aborta). El package-lock.json se regeneró para
+# incluir recharts; el pnpm-lock.yaml se ignora en .railwayignore.
+#
+# Aquí solo se sobreescribe la fase de build para garantizar dependencias de
+# producción (--no-dev) y la compilación de assets de Vite. Las migraciones y
+# el seed van en el pre-deploy (railway.json), donde sí hay red a la DB.
 
 [phases.build]
 cmds = [
-    "composer install --no-dev --optimize-autoloader",
+    "composer install --no-dev --optimize-autoloader --no-interaction",
     "npm ci",
     "npm run build",
 ]
-
-[phases.deploy]
-cmds = [
-    "php artisan migrate --force",
-    "php artisan config:cache",
-    "php artisan route:cache",
-    "php artisan view:cache",
-    "php artisan storage:link || true",
-]
-
-# `php artisan serve` está pensado para desarrollo (single-threaded, cliente HTTP
-# básico). En producción el plan oficial es:
-#   - usar el buildpack de PHP de Nixpacks que arranca nginx + php-fpm, o
-#   - migrar a FrankenPHP / Laravel Octane si se necesita más throughput.
-# Mientras tanto, este start funciona en Railway para tráfico bajo del TAP.
-[start]
-cmd = "php artisan serve --host 0.0.0.0 --port $PORT"
