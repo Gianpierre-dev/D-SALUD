@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\EstadoCaja;
 use App\Enums\MedioPago;
 use App\Enums\MotivoMovimiento;
 use App\Enums\TipoComprobante;
 use App\Models\Boleta;
+use App\Models\Caja;
 use App\Models\Cliente;
 use App\Models\DetalleVenta;
 use App\Models\Lote;
@@ -52,8 +54,8 @@ class VentaService
      * @param  int|null   $cajaId        Caja del turno (vínculo directo para el cuadre).
      * @param  float|null $montoRecibido Efectivo entregado por el cliente (para vuelto).
      * @param  string|null $tipoComprobante  BOLETA (default) o FACTURA (exige RUC).
-     * @throws \RuntimeException  Stock insuficiente, pagos que no cubren el total
-     *                            o factura sin RUC de cliente.
+     * @throws \RuntimeException  Stock insuficiente, pagos que no cubren el total,
+     *                            factura sin RUC de cliente o caja no ABIERTA.
      */
     public function registrar(
         array $items,
@@ -72,6 +74,25 @@ class VentaService
         $this->validarComprobante($tipo, $clienteId);
 
         return DB::transaction(function () use ($items, $userId, $clienteId, $pagos, $cajaId, $montoRecibido, $tipo): Venta {
+            // Si la venta se vincula a una caja, bloquear su fila y exigir que
+            // esté ABIERTA. Esto serializa registrar() contra cerrar() sobre la
+            // misma caja: evita que una venta entre a una caja recién cerrada y
+            // quede fuera del cuadre (descuadre silencioso de efectivo).
+            if ($cajaId !== null) {
+                $caja = Caja::lockForUpdate()->find($cajaId);
+
+                if ($caja === null) {
+                    throw new \RuntimeException('La caja indicada para la venta no existe.');
+                }
+
+                if ($caja->estado !== EstadoCaja::ABIERTA) {
+                    throw new \RuntimeException(
+                        'No se puede registrar la venta: la caja del turno está '
+                        . "{$caja->estado->etiqueta()}."
+                    );
+                }
+            }
+
             $venta = Venta::create([
                 'user_id'    => $userId,
                 'cliente_id' => $clienteId,

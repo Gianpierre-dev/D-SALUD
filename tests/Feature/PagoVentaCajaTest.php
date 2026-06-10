@@ -242,6 +242,26 @@ class PagoVentaCajaTest extends TestCase
         );
     }
 
+    public function test_no_se_registra_venta_en_caja_cerrada(): void
+    {
+        // Defensa contra descuadre silencioso: una venta no puede vincularse a
+        // una caja ya cerrada, porque su efectivo quedaría fuera del cuadre.
+        $caja     = $this->cajas->abrir($this->vendedor->id, 0.0);
+        $producto = $this->productoConStock(20.0);
+        $this->cajas->cerrar($caja->fresh(), 0.0, $this->vendedor->id);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('la caja del turno está');
+
+        $this->ventas->registrar(
+            [['producto_id' => $producto->id, 'cantidad' => 1]],
+            $this->vendedor->id,
+            null,
+            [['medio_pago' => 'EFECTIVO', 'monto' => 20.0]],
+            $caja->id,
+        );
+    }
+
     public function test_desglose_por_medio_agrupa_correctamente(): void
     {
         $caja     = $this->cajas->abrir($this->vendedor->id, 0.0);
