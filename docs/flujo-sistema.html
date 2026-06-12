@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>D'Salud — Flujo del sistema E2E</title>
+<style>
+  :root {
+    --brand: #16a34a;
+    --brand-dark: #15803d;
+    --ink: #111827;
+    --muted: #6b7280;
+    --bg: #f8fafc;
+    --card: #ffffff;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+  }
+  header {
+    background: linear-gradient(135deg, #0ea5e9 0%, var(--brand) 100%);
+    color: #fff;
+    padding: 36px 24px 28px;
+    text-align: center;
+  }
+  header h1 { margin: 0; font-size: 30px; }
+  header p { margin: 8px 0 0; opacity: .92; font-size: 15px; }
+  .politica {
+    display: inline-block;
+    margin-top: 14px;
+    background: #dc2626;
+    color: #fff;
+    font-weight: 700;
+    font-size: 13px;
+    padding: 6px 14px;
+    border-radius: 999px;
+  }
+  nav {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: var(--card);
+    border-bottom: 1px solid #e5e7eb;
+    padding: 10px 16px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: center;
+  }
+  nav a {
+    color: var(--brand-dark);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 6px;
+  }
+  nav a:hover { background: #f0fdf4; }
+  main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 64px; }
+  section {
+    background: var(--card);
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 24px;
+    margin-top: 24px;
+    scroll-margin-top: 64px;
+  }
+  section h2 { margin: 0 0 4px; font-size: 22px; color: var(--brand-dark); }
+  section p.intro { margin: 0 0 16px; color: var(--muted); font-size: 14.5px; max-width: 900px; }
+  .lienzo { overflow-x: auto; display: flex; justify-content: center; }
+  .fila-estados { display: flex; flex-wrap: wrap; gap: 16px; justify-content: center; }
+  .fila-estados > div {
+    flex: 1 1 300px;
+    border: 1px dashed #d1d5db;
+    border-radius: 10px;
+    padding: 12px;
+    text-align: center;
+  }
+  .fila-estados h3 { margin: 0 0 6px; font-size: 15px; }
+  footer { text-align: center; color: var(--muted); font-size: 12.5px; padding: 24px; }
+  .clave {
+    background: #f0fdf4;
+    border-left: 4px solid var(--brand);
+    padding: 10px 14px;
+    border-radius: 0 8px 8px 0;
+    font-size: 13.5px;
+    margin-top: 14px;
+    max-width: 900px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Sistema D'Salud — Flujo integral E2E</h1>
+  <p>Punto de venta para botica · Laravel 11 + Inertia.js + React · Material de presentación del flujo y los procesos del sistema</p>
+  <span class="politica">🚫 Política del negocio: NO se aceptan devoluciones — la anulación es la única reversa</span>
+</header>
+
+<nav>
+  <a href="#mapa">1. Mapa del sistema</a>
+  <a href="#proceso">2. Proceso integral</a>
+  <a href="#secuencia">3. Venta por dentro</a>
+  <a href="#estados">4. Estados</a>
+  <a href="#fefo">5. FEFO</a>
+  <a href="#cuadre">6. Cuadre de caja</a>
+  <a href="#seguridad">7. Seguridad</a>
+</nav>
+
+<main>
+
+<!-- ============ 1. MAPA ============ -->
+<section id="mapa">
+  <h2>1. Mapa del sistema: actores y módulos</h2>
+  <p class="intro">
+    D'Salud es un sistema interno con dos roles. El <b>Vendedor</b> opera el mostrador
+    (POS, su caja, clientes); el <b>Administrador</b> gestiona todo el negocio. Cada módulo
+    está protegido por permisos granulares (módulo.acción).
+  </p>
+  <div class="lienzo">
+<pre class="mermaid">
+flowchart LR
+  VEND(["🧑‍💼 Vendedor<br/>(mostrador)"])
+  ADMIN(["👤 Administrador<br/>(gestión total)"])
+
+  subgraph SISTEMA["Sistema D'Salud"]
+    direction TB
+    M1["🛒 Ventas / POS"]
+    M2["🗃️ Cajas y cuadre"]
+    M5["👥 Clientes"]
+    M3["📦 Inventario: productos,<br/>lotes y kardex"]
+    M4["🚚 Compras y proveedores"]
+    M6["📊 Dashboard y reportes<br/>(PDF / Excel)"]
+    M7["🔐 Usuarios, roles<br/>y auditoría"]
+    M8["⚙️ Configuración de empresa<br/>(razón social, RUC, logo)"]
+  end
+
+  VEND --> M1
+  VEND --> M2
+  VEND --> M5
+  ADMIN --> M1
+  ADMIN --> M2
+  ADMIN --> M3
+  ADMIN --> M4
+  ADMIN --> M5
+  ADMIN --> M6
+  ADMIN --> M7
+  ADMIN --> M8
+
+  style SISTEMA fill:#f8fafc,stroke:#94a3b8
+  style VEND fill:#fefce8,stroke:#ca8a04
+  style ADMIN fill:#eff6ff,stroke:#2563eb
+</pre>
+  </div>
+</section>
+
+<!-- ============ 2. PROCESO INTEGRAL ============ -->
+<section id="proceso">
+  <h2>2. Proceso integral del negocio (7 etapas)</h2>
+  <p class="intro">
+    El ciclo completo: la mercadería entra por <b>Compras</b>, el turno se habilita con la
+    <b>apertura de caja</b>, la <b>venta</b> descuenta stock con FEFO y termina en un
+    <b>comprobante</b> con IGV; cada movimiento queda en el <b>kardex</b>, el turno cierra
+    con <b>cuadre y reporte Z</b>, y la <b>anulación</b> es la única reversa permitida.
+  </p>
+  <div class="lienzo">
+<pre class="mermaid">
+flowchart LR
+subgraph ABASTECIMIENTO["📦 1. ABASTECIMIENTO (Compras)"]
+  direction TB
+  A1["Registrar orden de compra<br/>a proveedor (estado PENDIENTE)"] --> A2{"¿Mercadería<br/>recibida?"}
+  A2 -- "Sí: Recibir compra" --> A3["Se crean LOTES con<br/>código, vencimiento y stock"]
+  A3 --> A4["Kardex: ENTRADA<br/>motivo COMPRA"]
+  A2 -- "Anular orden" --> A5["Compra ANULADA<br/>(sin efecto en stock)"]
+end
+subgraph CAJA["🗃️ 2. TURNO DE CAJA"]
+  direction TB
+  C1["Vendedor APERTURA caja<br/>declara monto inicial<br/>en efectivo"] --> C2["Caja ABIERTA:<br/>habilita ventas del turno"]
+end
+subgraph VENTA["🛒 3. VENTA EN EL POS"]
+  direction TB
+  V1["Agregar productos al carrito"] --> V2{"¿Stock vigente<br/>suficiente?"}
+  V2 -- "No" --> V3["Venta bloqueada:<br/>stock insuficiente o lote vencido"]
+  V2 -- "Sí (FEFO: sale primero<br/>el lote más próximo a vencer)" --> V4["Cobrar"]
+  V4 --> V5{"Medio de pago"}
+  V5 -- "Efectivo" --> V6["Calcula VUELTO<br/>(monto recibido − total)"]
+  V5 -- "Yape / Plin / Tarjeta /<br/>Transferencia" --> V7["Pago digital<br/>(no entra a la gaveta)"]
+  V5 -.- V8["Nota: el pago puede DIVIDIRSE<br/>entre varios medios reales<br/>(la suma debe igualar el total)"]
+end
+A4 --> V1
+C2 --> V1
+style ABASTECIMIENTO fill:#eff6ff,stroke:#2563eb,stroke-width:2px
+style CAJA fill:#fefce8,stroke:#ca8a04,stroke-width:2px
+style VENTA fill:#f0fdf4,stroke:#16a34a,stroke-width:2px
+style V3 fill:#fee2e2,stroke:#dc2626
+style V8 fill:#f3f4f6,stroke:#6b7280,stroke-dasharray:4
+</pre>
+  </div>
+  <div class="lienzo" style="margin-top:18px">
+<pre class="mermaid">
+flowchart LR
+E0(["Cobro<br/>registrado (3)"])
+subgraph COMPROBANTE["🧾 4. COMPROBANTE"]
+  direction TB
+  B1{"¿Tipo?"} -- "Boleta" --> B2["Serie B001<br/>correlativo automático"]
+  B1 -- "Factura" --> B3{"¿Cliente<br/>con RUC?"}
+  B3 -- "Sí" --> B4["Serie F001<br/>correlativo automático"]
+  B3 -- "No" --> B5["Rechazada:<br/>factura exige RUC"]
+  B2 --> B6["Desglose IGV 18%<br/>(precio incluye IGV;<br/>exonerados separados)"]
+  B4 --> B6
+  B6 --> B7["PDF con logo<br/>de la empresa"]
+end
+subgraph KARDEX["📒 5. INVENTARIO (Kardex inmutable)"]
+  direction TB
+  K1["SALIDA motivo VENTA<br/>por cada lote afectado"] --> K2["Stock actualizado<br/>con bloqueo pesimista<br/>(seguro ante concurrencia)"]
+  K2 --> K3["Alertas del dashboard:<br/>stock bajo y lotes por vencer"]
+end
+subgraph CIERRE["🔐 6. CIERRE DE TURNO"]
+  direction TB
+  Z1["Vendedor cuenta el efectivo<br/>físico de la gaveta"] --> Z2["Sistema calcula esperado:<br/>apertura + ventas en EFECTIVO<br/>+ ingresos − egresos"]
+  Z2 --> Z3{"¿Coincide?"}
+  Z3 -- "Sí" --> Z4["Caja CERRADA<br/>diferencia = 0"]
+  Z3 -- "No" --> Z5["Caja CERRADA registrando<br/>faltante o sobrante"]
+  Z4 --> Z6["REPORTE Z en PDF:<br/>cuadre y desglose por medio de pago"]
+  Z5 --> Z6
+end
+subgraph ANULACION["⛔ 7. ANULACIÓN (única reversa permitida)"]
+  direction TB
+  X1["Usuario autorizado<br/>anula la venta"] --> X2["Kardex: ENTRADA motivo<br/>ANULACIÓN — repone stock<br/>a los lotes originales"]
+  X2 --> X3["Venta y comprobante<br/>quedan ANULADOS<br/>(trazabilidad en auditoría)"]
+  X4["🚫 POLÍTICA DE LA BOTICA:<br/>NO SE ACEPTAN DEVOLUCIONES<br/>de productos farmacéuticos"]
+end
+AUD["🕵️ Auditoría transversal:<br/>cada operación registra<br/>quién, qué y cuándo"]
+E0 --> B1
+B7 --> K1
+B7 -.-> X1
+K1 -.-> Z1
+K3 -.-> AUD
+Z6 -.-> AUD
+X3 -.-> AUD
+style KARDEX fill:#fff7ed,stroke:#ea580c,stroke-width:2px
+style CIERRE fill:#fdf2f8,stroke:#db2777,stroke-width:2px
+style ANULACION fill:#fef2f2,stroke:#dc2626,stroke-width:2px
+style X4 fill:#dc2626,color:#ffffff,stroke:#991b1b,stroke-width:2px
+style E0 fill:#f0fdf4,stroke:#16a34a
+style COMPROBANTE fill:#faf5ff,stroke:#7c3aed,stroke-width:2px
+style B5 fill:#fee2e2,stroke:#dc2626
+style AUD fill:#f3f4f6,stroke:#6b7280,stroke-dasharray:4
+</pre>
+  </div>
+</section>
+
+<!-- ============ 3. SECUENCIA ============ -->
+<section id="secuencia">
+  <h2>3. Una venta por dentro (secuencia E2E)</h2>
+  <p class="intro">
+    Lo que ocurre entre que el cajero pulsa «Cobrar» y la boleta sale por pantalla.
+    Todo corre dentro de una <b>transacción</b>: si cualquier paso falla, nada queda a medias
+    (rollback automático) y el cajero ve el motivo sin perder el carrito.
+  </p>
+  <div class="lienzo">
+<pre class="mermaid">
+sequenceDiagram
+  autonumber
+  actor C as Cajero
+  participant POS as POS (React)
+  participant API as Backend (Laravel)
+  participant BD as Base de datos
+
+  C->>POS: Agrega productos y pulsa «Cobrar»
+  POS->>API: POST /ventas (items, pagos, comprobante) + Idempotency-Key
+  Note over POS,API: La Idempotency-Key bloquea dobles ventas<br/>por doble clic o reintento de red
+  API->>BD: ¿La caja del cajero está ABIERTA? (bloqueo de fila)
+
+  alt Caja cerrada o inexistente
+    API-->>POS: Error de negocio con el motivo
+    POS-->>C: Toast explicativo — el carrito se conserva
+  else Caja abierta
+    API->>BD: FEFO con bloqueo pesimista:<br/>lotes vigentes por vencimiento ascendente
+    alt Stock insuficiente o solo lotes vencidos
+      API-->>POS: Error de stock (rollback total)
+      POS-->>C: Motivo visible — el carrito se conserva
+    else Stock disponible
+      API->>BD: Descuenta stock y registra kardex SALIDA (motivo VENTA)
+      API->>BD: Registra pagos (la suma debe igualar el total) y el vuelto
+      API->>BD: Comprobante con correlativo B001/F001 + desglose IGV 18%
+      API->>BD: Auditoría (usuario, acción, detalle, fecha)
+      API-->>POS: Venta COMPLETADA
+      POS-->>C: Boleta en pantalla + PDF con el logo de la empresa
+    end
+  end
+</pre>
+  </div>
+</section>
+
+<!-- ============ 4. ESTADOS ============ -->
+<section id="estados">
+  <h2>4. Estados de las entidades de negocio</h2>
+  <p class="intro">
+    Cada entidad crítica tiene un ciclo de vida cerrado: no existen estados intermedios
+    ambiguos y las transiciones inválidas se rechazan en el servidor.
+  </p>
+  <div class="fila-estados">
+    <div>
+      <h3>🗃️ Caja (turno)</h3>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> ABIERTA: apertura con<br/>monto inicial
+  ABIERTA --> CERRADA: cierre con conteo<br/>de efectivo y cuadre
+  CERRADA --> [*]: reporte Z<br/>disponible
+</pre>
+    </div>
+    <div>
+      <h3>🚚 Compra</h3>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> PENDIENTE: orden registrada
+  PENDIENTE --> RECIBIDA: recepción genera<br/>lotes y kardex
+  PENDIENTE --> ANULADA: sin efecto<br/>en stock
+  RECIBIDA --> [*]
+  ANULADA --> [*]
+</pre>
+    </div>
+    <div>
+      <h3>🛒 Venta</h3>
+<pre class="mermaid">
+stateDiagram-v2
+  [*] --> COMPLETADA: cobro y<br/>comprobante emitidos
+  COMPLETADA --> ANULADA: repone stock<br/>(kardex ANULACIÓN)
+  ANULADA --> [*]
+  note right of COMPLETADA
+    No existen devoluciones:
+    la anulación es la única reversa
+  end note
+</pre>
+    </div>
+  </div>
+</section>
+
+<!-- ============ 5. FEFO ============ -->
+<section id="fefo">
+  <h2>5. FEFO: cómo decide el sistema qué lote vender</h2>
+  <p class="intro">
+    <b>First Expired, First Out</b>: en una botica lo crítico no es la antigüedad del lote
+    sino su <b>vencimiento</b>. El sistema descuenta primero el lote más próximo a vencer y
+    jamás vende un lote vencido — esto reduce mermas y protege al paciente.
+  </p>
+  <div class="lienzo">
+<pre class="mermaid">
+flowchart LR
+  P["Venta: 30 unidades<br/>de Paracetamol"] --> S{"FEFO ordena los lotes vigentes<br/>por vencimiento ascendente"}
+  S -- "1°" --> L1["Lote A — vence 07/2026<br/>stock 20 → usa las 20"]
+  S -- "2°" --> L2["Lote B — vence 01/2027<br/>stock 100 → usa 10"]
+  S -. "descartado" .-> L3["Lote vencido:<br/>NUNCA se vende"]
+  L1 --> K["Kardex: una SALIDA por lote<br/>→ trazabilidad exacta<br/>de qué lote salió en cada venta"]
+  L2 --> K
+  style L3 fill:#fee2e2,stroke:#dc2626
+  style K fill:#fff7ed,stroke:#ea580c
+</pre>
+  </div>
+  <div class="clave">
+    💡 <b>Detalle técnico defendible:</b> la selección de lotes usa <b>bloqueo pesimista</b>
+    (<code>lockForUpdate</code>): si dos cajeros venden el mismo producto a la vez, no es
+    posible vender dos veces la misma unidad.
+  </div>
+</section>
+
+<!-- ============ 6. CUADRE ============ -->
+<section id="cuadre">
+  <h2>6. Cuadre de caja: la fórmula del efectivo esperado</h2>
+  <p class="intro">
+    El error clásico de los POS caseros es sumar TODAS las ventas al cuadre. D'Salud solo
+    espera en la gaveta lo que entró <b>en efectivo</b>: los pagos digitales (Yape, Plin,
+    tarjeta, transferencia) se reportan aparte y no generan falsos faltantes.
+  </p>
+  <div class="lienzo">
+<pre class="mermaid">
+flowchart LR
+  A["Monto de apertura"] --> E["EFECTIVO ESPERADO<br/>en la gaveta"]
+  V["+ Ventas cobradas<br/>en EFECTIVO"] --> E
+  I["+ Ingresos de caja<br/>(p. ej. fondo adicional)"] --> E
+  G["− Egresos de caja<br/>(p. ej. pago a proveedor)"] --> E
+  D["Pagos digitales:<br/>Yape / Plin / Tarjeta / Transferencia"] -. "NO entran a la gaveta:<br/>se reportan por separado" .-> E
+  E --> C{"¿Coincide con el<br/>efectivo contado?"}
+  C -- "Sí" --> OK["Cuadre perfecto<br/>diferencia = 0"]
+  C -- "No" --> DIF["Faltante o sobrante<br/>queda registrado"]
+  OK --> Z["📄 Reporte Z en PDF:<br/>cuadre + desglose por medio de pago"]
+  DIF --> Z
+  style E fill:#f0fdf4,stroke:#16a34a,stroke-width:2px
+  style D fill:#f3f4f6,stroke:#6b7280,stroke-dasharray:4
+  style DIF fill:#fee2e2,stroke:#dc2626
+  style OK fill:#dcfce7,stroke:#16a34a
+</pre>
+  </div>
+</section>
+
+<!-- ============ 7. SEGURIDAD ============ -->
+<section id="seguridad">
+  <h2>7. Seguridad: cada solicitud pasa por tres puertas</h2>
+  <p class="intro">
+    Autenticación con límite de intentos, autorización por <b>45 permisos granulares</b>
+    (módulo.acción) asignados por rol, y auditoría inmutable de todo lo que pasa. La
+    recuperación de contraseña es <b>administrada</b>: al ser un sistema interno, el
+    Administrador restablece credenciales desde el módulo de Usuarios (sin depender de correo).
+  </p>
+  <div class="lienzo">
+<pre class="mermaid">
+flowchart LR
+  R["Solicitud<br/>del usuario"] --> AUTH{"1️⃣ ¿Sesión<br/>válida?"}
+  AUTH -- "No" --> LOGIN["Login con rate limiting<br/>(bloqueo anti fuerza bruta)<br/>y política de contraseñas NIST"]
+  AUTH -- "Sí" --> PERM{"2️⃣ ¿Su rol tiene<br/>el permiso?"}
+  PERM -- "No" --> DENY["403 — acceso<br/>denegado"]
+  PERM -- "Sí" --> PROP{"3️⃣ ¿El recurso<br/>le pertenece?<br/>(p. ej. su propia caja)"}
+  PROP -- "No" --> DENY
+  PROP -- "Sí" --> ACC["Ejecuta la acción"]
+  ACC --> AUD["🕵️ Auditoría:<br/>usuario + acción + detalle + fecha"]
+  style DENY fill:#fee2e2,stroke:#dc2626
+  style LOGIN fill:#fefce8,stroke:#ca8a04
+  style AUD fill:#f3f4f6,stroke:#6b7280
+  style ACC fill:#dcfce7,stroke:#16a34a
+</pre>
+  </div>
+  <div class="clave">
+    💡 <b>Ejemplo en vivo para el jurado:</b> ingresar como <code>vendedor@dsalud.com</code> y
+    observar que el menú solo muestra POS, Cajas y Clientes; intentar la URL de Usuarios
+    devuelve 403, y el intento queda en Auditoría.
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Sistema D'Salud · TAP — flujo integral del sistema · Diagramas: Mermaid (editable en este mismo archivo)
+</footer>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({
+    startOnLoad: false,
+    theme: 'base',
+    flowchart: { curve: 'basis', htmlLabels: true, useMaxWidth: false },
+    sequence: { useMaxWidth: false },
+  });
+  await mermaid.run({ querySelector: 'pre.mermaid' });
+
+  // Mermaid limita los SVG con max-width y los encoge; se fija el tamaño
+  // natural (viewBox) y los contenedores .lienzo aportan scroll horizontal
+  // para los diagramas anchos.
+  document.querySelectorAll('pre.mermaid svg').forEach((el) => {
+    const vb = el.viewBox && el.viewBox.baseVal;
+    if (!vb || !vb.width) return;
+    el.style.maxWidth = 'none';
+    el.removeAttribute('width');
+    el.removeAttribute('height');
+    el.style.width = vb.width + 'px';
+    el.style.height = vb.height + 'px';
+  });
+</script>
+</body>
+</html>
