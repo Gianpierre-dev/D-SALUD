@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Head, Link, router } from '@inertiajs/react';
+import { Head, Link, router, usePage } from '@inertiajs/react';
 import { IconShoppingCart, IconSearch, IconUserHeart, IconCashRegister } from '@tabler/icons-react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import PrimaryButton from '@/Components/PrimaryButton';
@@ -35,6 +35,10 @@ export default function Create({ productos, clientes = [], cajaAbierta = null })
     const [clienteId, setClienteId] = useState('');
     const [procesando, setProcesando] = useState(false);
     const [cobrarAbierto, setCobrarAbierto] = useState(false);
+    // Solo se muestran errores de validación dentro del modal cuando el
+    // último envío falló (evita arrastrar errores viejos al reabrirlo).
+    const [huboErrorEnvio, setHuboErrorEnvio] = useState(false);
+    const { errors } = usePage().props;
     const idempotencyKeyRef = useRef(generarIdempotencyKey());
 
     // Sin caja abierta el POS está bloqueado. El backend ya rechaza el POST,
@@ -162,18 +166,31 @@ export default function Create({ productos, clientes = [], cajaAbierta = null })
             },
             {
                 headers: { 'Idempotency-Key': idempotencyKeyRef.current },
-                onSuccess: () => {
+                onSuccess: (page) => {
+                    // Un error de negocio (stock insuficiente, caja cerrada...)
+                    // llega como redirect con flash.error, NO como 422: hay que
+                    // distinguirlo de un éxito real. Se conserva el carrito y la
+                    // idempotency key para que el cajero corrija y reintente;
+                    // el motivo se muestra en el toast (FlashMessages).
+                    if (page.props.flash?.error) {
+                        setCobrarAbierto(false);
+                        router.reload({ only: ['productos'] });
+                        return;
+                    }
+
                     setCarrito([]);
                     setClienteId('');
                     setCobrarAbierto(false);
+                    setHuboErrorEnvio(false);
                     // Tras un éxito real, rotamos la key para la próxima venta.
                     idempotencyKeyRef.current = generarIdempotencyKey();
                 },
                 onError: () => {
-                    setCobrarAbierto(false);
-                    // Refresca stock_total tras un error de negocio (stock
-                    // insuficiente, producto inactivo, etc.) para no insistir
-                    // sobre datos viejos del carrito.
+                    // Error de validación (422): el modal se mantiene ABIERTO
+                    // y muestra el motivo (antes se cerraba en silencio y el
+                    // cajero no sabía por qué no se registró la venta).
+                    setHuboErrorEnvio(true);
+                    // Refresca stock_total para no insistir sobre datos viejos.
                     router.reload({ only: ['productos'] });
                 },
                 onFinish: () => setProcesando(false),
@@ -317,7 +334,10 @@ export default function Create({ productos, clientes = [], cajaAbierta = null })
                                 <PrimaryButton
                                     className="w-full justify-center"
                                     disabled={carrito.length === 0 || procesando}
-                                    onClick={() => setCobrarAbierto(true)}
+                                    onClick={() => {
+                                        setHuboErrorEnvio(false);
+                                        setCobrarAbierto(true);
+                                    }}
                                 >
                                     {procesando ? 'Registrando...' : 'Cobrar'}
                                 </PrimaryButton>
@@ -332,6 +352,7 @@ export default function Create({ productos, clientes = [], cajaAbierta = null })
                 onClose={() => setCobrarAbierto(false)}
                 total={totalCarrito}
                 procesando={procesando}
+                errores={huboErrorEnvio ? errors : {}}
                 onConfirmar={registrarVenta}
                 clienteEsRuc={
                     clienteId

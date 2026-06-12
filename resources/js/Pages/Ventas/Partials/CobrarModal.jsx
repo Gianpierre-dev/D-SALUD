@@ -26,7 +26,10 @@ const MEDIOS = [
     { value: 'TRANSFERENCIA', label: 'Transferencia', icon: IconBuildingBank },
 ];
 
-export default function CobrarModal({ show, onClose, total, procesando, onConfirmar, clienteEsRuc = false }) {
+export default function CobrarModal({ show, onClose, total, procesando, onConfirmar, clienteEsRuc = false, errores = {} }) {
+    // Mensajes de validación del backend, sin duplicados, listos para listar.
+    const mensajesError = [...new Set(Object.values(errores).flat())];
+
     const [mixto, setMixto] = useState(false);
     const [medioSimple, setMedioSimple] = useState('EFECTIVO');
     const [recibido, setRecibido] = useState('');
@@ -105,6 +108,24 @@ export default function CobrarModal({ show, onClose, total, procesando, onConfir
                 <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
                     Cobrar venta
                 </h2>
+
+                {/* Errores del último intento: el cajero debe SIEMPRE saber por
+                    qué no se registró la venta antes de reintentar. */}
+                {mensajesError.length > 0 && (
+                    <div
+                        role="alert"
+                        className="mt-3 rounded-md border border-red-200 bg-red-50 p-3 dark:border-red-800 dark:bg-red-900/20"
+                    >
+                        <p className="text-sm font-semibold text-red-700 dark:text-red-300">
+                            No se pudo registrar la venta:
+                        </p>
+                        <ul className="mt-1 list-disc pl-5 text-xs text-red-600 dark:text-red-400">
+                            {mensajesError.map((mensaje) => (
+                                <li key={mensaje}>{mensaje}</li>
+                            ))}
+                        </ul>
+                    </div>
+                )}
 
                 {/* Total */}
                 <div className="mt-3 flex items-center justify-between rounded-lg bg-brand-50 px-4 py-3 dark:bg-brand-900/20">
