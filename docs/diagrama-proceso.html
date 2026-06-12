@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>D'Salud — Proceso integral del sistema</title>
+<style>
+  body { background: #ffffff; margin: 24px; font-family: 'Segoe UI', sans-serif; }
+  h1 { text-align: center; font-size: 26px; color: #111827; margin-bottom: 2px; }
+  p.sub { text-align: center; font-size: 15px; color: #6b7280; margin-top: 0; margin-bottom: 18px; }
+  .banda { display: flex; justify-content: center; }
+  .conector { text-align: center; font-size: 15px; font-weight: 600; color: #6b7280; margin: 6px 0; }
+</style>
+</head>
+<body>
+<h1>Sistema D'Salud — Proceso integral de la botica</h1>
+<p class="sub">Abastecimiento → Turno de caja → Venta POS → Comprobante → Kardex → Cierre y reporte Z &nbsp;|&nbsp; Política: NO se aceptan devoluciones</p>
+
+<div class="banda">
+<pre class="mermaid">
+flowchart LR
+
+subgraph ABASTECIMIENTO["📦 1. ABASTECIMIENTO (Compras)"]
+  direction TB
+  A1["Registrar orden de compra<br/>a proveedor (estado PENDIENTE)"] --> A2{"¿Mercadería<br/>recibida?"}
+  A2 -- "Sí: Recibir compra" --> A3["Se crean LOTES con<br/>código, vencimiento y stock"]
+  A3 --> A4["Kardex: ENTRADA<br/>motivo COMPRA"]
+  A2 -- "Anular orden" --> A5["Compra ANULADA<br/>(sin efecto en stock)"]
+end
+
+subgraph CAJA["🗃️ 2. TURNO DE CAJA"]
+  direction TB
+  C1["Vendedor APERTURA caja<br/>declara monto inicial<br/>en efectivo"] --> C2["Caja ABIERTA:<br/>habilita ventas del turno"]
+end
+
+subgraph VENTA["🛒 3. VENTA EN EL POS"]
+  direction TB
+  V1["Agregar productos al carrito"] --> V2{"¿Stock vigente<br/>suficiente?"}
+  V2 -- "No" --> V3["Venta bloqueada:<br/>stock insuficiente o lote vencido"]
+  V2 -- "Sí (FEFO: sale primero<br/>el lote más próximo a vencer)" --> V4["Cobrar"]
+  V4 --> V5{"Medio de pago"}
+  V5 -- "Efectivo" --> V6["Calcula VUELTO<br/>(monto recibido − total)"]
+  V5 -- "Yape / Plin / Tarjeta /<br/>Transferencia" --> V7["Pago digital<br/>(no entra a la gaveta)"]
+  V5 -.- V8["Nota: el pago puede DIVIDIRSE<br/>entre varios medios reales<br/>(la suma debe igualar el total)"]
+end
+
+A4 --> V1
+C2 --> V1
+
+style ABASTECIMIENTO fill:#eff6ff,stroke:#2563eb,stroke-width:2px
+style CAJA fill:#fefce8,stroke:#ca8a04,stroke-width:2px
+style VENTA fill:#f0fdf4,stroke:#16a34a,stroke-width:2px
+style V3 fill:#fee2e2,stroke:#dc2626
+style V8 fill:#f3f4f6,stroke:#6b7280,stroke-dasharray:4
+</pre>
+</div>
+
+<p class="conector">▼ Tras el cobro: emisión del comprobante, impacto en inventario, cierre del turno y anulación ▼</p>
+
+<div class="banda">
+<pre class="mermaid">
+flowchart LR
+
+E0(["Cobro<br/>registrado (3)"])
+
+subgraph COMPROBANTE["🧾 4. COMPROBANTE"]
+  direction TB
+  B1{"¿Tipo?"} -- "Boleta" --> B2["Serie B001<br/>correlativo automático"]
+  B1 -- "Factura" --> B3{"¿Cliente<br/>con RUC?"}
+  B3 -- "Sí" --> B4["Serie F001<br/>correlativo automático"]
+  B3 -- "No" --> B5["Rechazada:<br/>factura exige RUC"]
+  B2 --> B6["Desglose IGV 18%<br/>(precio incluye IGV;<br/>exonerados separados)"]
+  B4 --> B6
+  B6 --> B7["PDF con logo<br/>de la empresa"]
+end
+
+
+
+subgraph KARDEX["📒 5. INVENTARIO (Kardex inmutable)"]
+  direction TB
+  K1["SALIDA motivo VENTA<br/>por cada lote afectado"] --> K2["Stock actualizado<br/>con bloqueo pesimista<br/>(seguro ante concurrencia)"]
+  K2 --> K3["Alertas del dashboard:<br/>stock bajo y lotes por vencer"]
+end
+
+subgraph CIERRE["🔐 6. CIERRE DE TURNO"]
+  direction TB
+  Z1["Vendedor cuenta el efectivo<br/>físico de la gaveta"] --> Z2["Sistema calcula esperado:<br/>apertura + ventas en EFECTIVO<br/>+ ingresos − egresos"]
+  Z2 --> Z3{"¿Coincide?"}
+  Z3 -- "Sí" --> Z4["Caja CERRADA<br/>diferencia = 0"]
+  Z3 -- "No" --> Z5["Caja CERRADA registrando<br/>faltante o sobrante"]
+  Z4 --> Z6["REPORTE Z en PDF:<br/>cuadre y desglose por medio de pago"]
+  Z5 --> Z6
+end
+
+subgraph ANULACION["⛔ 7. ANULACIÓN (única reversa permitida)"]
+  direction TB
+  X1["Usuario autorizado<br/>anula la venta"] --> X2["Kardex: ENTRADA motivo<br/>ANULACIÓN — repone stock<br/>a los lotes originales"]
+  X2 --> X3["Venta y comprobante<br/>quedan ANULADOS<br/>(trazabilidad en auditoría)"]
+  X4["🚫 POLÍTICA DE LA BOTICA:<br/>NO SE ACEPTAN DEVOLUCIONES<br/>de productos farmacéuticos"]
+end
+
+AUD["🕵️ Auditoría transversal:<br/>cada operación registra<br/>quién, qué y cuándo"]
+
+E0 --> B1
+B7 --> K1
+B7 -.-> X1
+K1 -.-> Z1
+K3 -.-> AUD
+Z6 -.-> AUD
+X3 -.-> AUD
+
+style KARDEX fill:#fff7ed,stroke:#ea580c,stroke-width:2px
+style CIERRE fill:#fdf2f8,stroke:#db2777,stroke-width:2px
+style ANULACION fill:#fef2f2,stroke:#dc2626,stroke-width:2px
+style X4 fill:#dc2626,color:#ffffff,stroke:#991b1b,stroke-width:2px
+style E0 fill:#f0fdf4,stroke:#16a34a
+style COMPROBANTE fill:#faf5ff,stroke:#7c3aed,stroke-width:2px
+style B5 fill:#fee2e2,stroke:#dc2626
+style AUD fill:#f3f4f6,stroke:#6b7280,stroke-dasharray:4
+</pre>
+</div>
+
+<script type="module">
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+  mermaid.initialize({ startOnLoad: true, theme: 'base', flowchart: { curve: 'basis', htmlLabels: true, useMaxWidth: false } });
+</script>
+</body>
+</html>
