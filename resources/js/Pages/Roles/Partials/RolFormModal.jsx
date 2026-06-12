@@ -16,6 +16,43 @@ import SecondaryButton from '@/Components/SecondaryButton';
  * @param {object}       permisos - Permisos agrupados por módulo:
  *                                  { categorias: [{id, name}, ...], productos: [...], ... }
  */
+
+// Etiquetas en español para la UI. El identificador técnico del permiso
+// (p. ej. "ventas.create") se mantiene como valor; aquí solo se traduce
+// lo que el usuario ve.
+const ETIQUETAS_MODULO = {
+    dashboard: 'Dashboard',
+    usuarios: 'Usuarios',
+    roles: 'Roles',
+    categorias: 'Categorías',
+    productos: 'Productos',
+    lotes: 'Lotes',
+    proveedores: 'Proveedores',
+    clientes: 'Clientes',
+    inventario: 'Inventario',
+    compras: 'Compras',
+    cajas: 'Cajas',
+    ventas: 'Ventas',
+    reportes: 'Reportes',
+    auditoria: 'Auditoría',
+    empresa: 'Empresa',
+};
+
+const ETIQUETAS_ACCION = {
+    read: 'Ver',
+    create: 'Crear',
+    update: 'Editar',
+    delete: 'Eliminar',
+    recibir: 'Recibir',
+    close: 'Cerrar',
+    cancel: 'Anular',
+};
+
+const etiquetaModulo = (modulo) => ETIQUETAS_MODULO[modulo] ?? modulo;
+const etiquetaAccion = (nombre) => {
+    const accion = nombre.split('.')[1];
+    return ETIQUETAS_ACCION[accion] ?? accion;
+};
 export default function RolFormModal({ show, onClose, rol = null, permisos = {} }) {
     const esEdicion = Boolean(rol);
 
@@ -132,8 +169,8 @@ export default function RolFormModal({ show, onClose, rol = null, permisos = {} 
                                                     checked={todosActivos}
                                                     onChange={() => toggleModulo(permsModulo)}
                                                 />
-                                                <span className="text-sm font-semibold capitalize text-gray-800 dark:text-gray-200">
-                                                    {modulo}
+                                                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                                    {etiquetaModulo(modulo)}
                                                 </span>
                                             </label>
 
@@ -148,8 +185,8 @@ export default function RolFormModal({ show, onClose, rol = null, permisos = {} 
                                                             checked={data.permissions.includes(permiso.name)}
                                                             onChange={() => togglePermiso(permiso.name)}
                                                         />
-                                                        <span className="text-xs capitalize text-gray-600 dark:text-gray-400">
-                                                            {permiso.name.split('.')[1]}
+                                                        <span className="text-xs text-gray-600 dark:text-gray-400">
+                                                            {etiquetaAccion(permiso.name)}
                                                         </span>
                                                     </label>
                                                 ))}
