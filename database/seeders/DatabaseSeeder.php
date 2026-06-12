@@ -35,7 +35,8 @@ class DatabaseSeeder extends Seeder
             ['id' => 1],
             [
                 'razon_social' => "Botica D'Salud S.A.C.",
-                'ruc' => '20600000001',
+                // RUC de demostración con dígito verificador válido (módulo 11).
+                'ruc' => '20601589428',
                 'direccion' => 'Av. Guillermo Billinghurst 1045, San Juan de Miraflores, Lima',
                 'telefono' => '01-0000000',
             ],
