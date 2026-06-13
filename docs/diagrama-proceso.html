@@ -40,7 +40,7 @@ subgraph VENTA["🛒 3. VENTA EN EL POS"]
   V4 --> V5{"Medio de pago"}
   V5 -- "Efectivo" --> V6["Calcula VUELTO<br/>(monto recibido − total)"]
   V5 -- "Yape / Plin / Tarjeta /<br/>Transferencia" --> V7["Pago digital<br/>(no entra a la gaveta)"]
-  V5 -.- V8["Nota: el pago puede DIVIDIRSE<br/>entre varios medios reales<br/>(la suma debe igualar el total)"]
+  V5 -.- V8["Nota: el cobro puede combinar<br/>varios medios (p. ej. Yape + efectivo);<br/>se emite UN SOLO comprobante y el<br/>desglose queda en cuadre y reporte Z"]
 end
 
 A4 --> V1
